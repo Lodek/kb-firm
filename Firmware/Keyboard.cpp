@@ -1,5 +1,21 @@
 #include "Keyboard.h"
 
+class Key
+{
+	enum key_type
+	{
+		clear=0;
+		normal=1;
+		macro=3;
+		ignore=4;
+	}
+
+    int keycode;	
+	void send_key();
+	
+
+}  
+
 uint8_t out_buffer[8]={0};
 
 int selector=1;
@@ -7,7 +23,8 @@ int selector=1;
 int row[NUM_ROW] = {1,21,2,3};
 int col[NUM_COLL] = {4,5,6,7,8,9,10,16,14,15,18,19,20};
 
-int custom_mods[NUM_CUSTOM_MODS] = {CUSTOM_MOD_KEY_POS};
+if(NUM_CUSTOM_MODS=!0) int custom_mods[NUM_CUSTOM_MODS] = {CUSTOM_MOD_KEY_POS};
+else 
 
 int mapping[NUM_CUSTOM_MODS+1][NUM_KEYS] =
 {
@@ -18,6 +35,32 @@ int mapping[NUM_CUSTOM_MODS+1][NUM_KEYS] =
 	{0x0000, 0x0000, 0x0052, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0050, 0x0051, 0x004f, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0200, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x0000, 0x002c, 0x002c, 0x0000, 0x0000, 0x0000, 0x0000, 0x1000, 0x004c}
 };
 
+
+
+struct key_object
+	{
+		enum key_type
+		{
+ 			clear=0;
+			normal=1;
+            macro=3;
+            ignore=4;
+		}
+        int keycode;
+		//something for macros
+		//?
+	};
+
+typedef struct key_object key;
+
+key profile[NUM_CUSTOM_MODS+1][NUM_KEYS];
+
+for(int a=0; a<NUM_CUSTOM_MODS+1; a++)
+	for(int b=0; b<NUM_KEYS; b++)
+ 	{
+		profile[a][b].key_type=0;
+		profile[a][b].keycode=0;
+	}
 
 
 int matrix_status[2][NUM_KEYS] = {0};
@@ -103,7 +146,10 @@ void key_sender()
    flush();
    for(int i=0; i<NUM_COLL*NUM_ROW; i++)
    {
-     if(matrix_status[selector][i]==1) add_to_buffer(mapping[map_use][i]);    
+     if(matrix_status[selector][i]==1)	
+	 {
+		if(profile[map_use][i].key_type==0) add_to_buffer(profile[0][i].key_code);
+	 }
    }
   }
    
@@ -314,3 +360,4 @@ void flush()
   for(int i=0; i<8; i++) out_buffer[i]=0;
   return;
 }
+
