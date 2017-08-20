@@ -1,78 +1,36 @@
 #include "Keyboard.h"
 
-class Key
+#define NUMLAYERS
+#define LAYERVALUE
+typedef enum behavior_enum {normal, hold, doubletap, clear, mod, macro, dth, ghost} behavior_enum; 
+
+typedef struct key_data
 {
-	enum key_type
-	{
-		clear=0;
-		normal=1;
-		macro=3;
-		ignore=4;
-	}
+	behavior_enum behavior;
+	int keycode;
+} key_data;
 
-    int keycode;	
-	void send_key();
+typedef struct key
+{
+	int important, on_buffer, state;
 	
+	key_data data[NUMLAYERS+1];
+	
+} key;
 
-}  
+key matrix[NUMKEYS];
+
+int modstate;
 
 uint8_t out_buffer[8]={0};
-
-int selector=1;
 
 int row[NUM_ROW] = {1,21,2,3};
 int col[NUM_COLL] = {4,5,6,7,8,9,10,16,14,15,18,19,20};
 
-if(NUM_CUSTOM_MODS=!0) int custom_mods[NUM_CUSTOM_MODS] = {CUSTOM_MOD_KEY_POS};
-else 
 
 int mapping[NUM_CUSTOM_MODS+1][NUM_KEYS] =
 {
-	{0x002b, 0x0014, 0x001a, 0x0008, 0x0015, 0x0017, 0x001c, 0x0018, 0x000c, 0x0012, 0x0013, 0x002a, 0x002a, 0x0029, 0x0004, 0x0016, 0x0007, 0x0009, 0x000a, 0x000b, 0x000d, 0x000e, 0x000f, 0x0033, 0x0034, 0x0028, 0x0200, 0x001d, 0x001b, 0x0006, 0x0019, 0x0005, 0x0011, 0x0010, 0x0036, 0x0037, 0x0038, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x0000, 0x002c, 0x002c, 0x0000, 0x0000, 0x0000, 0x0000, 0x1000, 0x004c},
-	{0,0x0535},
-	{0x0037, 0x0024, 0x0025, 0x0026, 0x2024, 0x2025, 0x002d, 0x0031, 0x0038, 0x2026, 0x2027, 0x002a, 0x002a, 0x0027, 0x0021, 0x0022, 0x0023, 0x2021, 0x2022, 0x2023, 0x2036, 0x2037, 0x202f, 0x2030, 0x2031, 0x0028, 0x0200, 0x001e, 0x001f, 0x0020, 0x201e, 0x201f, 0x2020, 0x002e, 0x0035, 0x002f, 0x0030, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x0000, 0x002a, 0x002a, 0x0000, 0x0000, 0x0000, 0x0000, 0x1000, 0x002c},
-	{0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f, 0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x002a, 0x002a, 0x0039, 0x007f, 0x0081, 0x0080, 0x0074, 0x0078, 0x0050, 0x0051, 0x0052, 0x004f, 0x0048, 0x0045, 0x0028, 0x0200, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x004a, 0x004e, 0x004b, 0x004d, 0x0046, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x0000, 0x0028, 0x0028, 0x0000, 0x0000, 0x0000, 0x0000, 0x1000, 0x002c},
-	{0x0000, 0x0000, 0x0052, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0050, 0x0051, 0x004f, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0200, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x0000, 0x002c, 0x002c, 0x0000, 0x0000, 0x0000, 0x0000, 0x1000, 0x004c}
 };
-
-
-
-struct key_object
-	{
-		enum key_type
-		{
- 			clear=0;
-			normal=1;
-            macro=3;
-            ignore=4;
-		}
-        int keycode;
-		//something for macros
-		//?
-	};
-
-typedef struct key_object key;
-
-key profile[NUM_CUSTOM_MODS+1][NUM_KEYS];
-
-for(int a=0; a<NUM_CUSTOM_MODS+1; a++)
-	for(int b=0; b<NUM_KEYS; b++)
- 	{
-		profile[a][b].key_type=0;
-		profile[a][b].keycode=0;
-	}
-
-
-int matrix_status[2][NUM_KEYS] = {0};
-
-int counter=0;
-int toggle=0;
-int toggle_map=0;
-int map_use=0;
-int map_use_last=0;
-int modvar=0;
-int modvar_pos=0;
-
 
 
 // initialize microcontroller
@@ -95,41 +53,31 @@ void startup_routine()
   return;
 }
 
-
-// sets theh current row to HIGH
-//calls thheh keycheckmethod passisng the index of the for
-// resets row to write LOW
+//uses col and row array with corresponding pin number
+//loops through each row by setting it to high, calls digital  read on each collumn
+//write result of digital read to the matching key on the matrix array
+//resets current row to low
+//repeats for next row
 void matrix_scan()
 {
-  selector=!selector;
 
   for(int i=0; i<NUM_ROW; i++)
   {
     digitalWrite(row[i], HIGH);
-    key_check(i);
+    for(int j=0; j<NUM_COL; j++)
+	{
+		matrix[i*NUM_COLL+j].state=digitalRead(col[j]);
+	}
     digitalWrite(row[i], LOW);
   }
   return;
 }
 
-
-//receives information about row being scanned
-//checks each collum for a HIGH
-//writes the state of each collums to the matrix_status array
-//the expression simply calculates the position of the key in the array
-void key_check(int i)
+void layer_selector()
 {
 
-  for(int j=0; j<NUM_COLL; j++)
-  {    
-     if (digitalRead(col[j]) == HIGH)
-    {
-      matrix_status[selector][(i*NUM_COLL+j)]=1;
-     }
-     else matrix_status[selector][(i*NUM_COLL+j)]=0;
-  }
-  return;
 }
+
 
 
 //checks if the current keymap is different than the last used
@@ -173,69 +121,6 @@ void key_sender()
   return;
 }
 
-
-//the most complicated function in the code
-//it's purpose is simple however
-//it checks which modifier key (if any) has been pressed
-//and assign the according key map to be used this cycle
-//track how long ago the last modifier key has been pressed so it can identify a double tap
-//if key is dobble tapped within the specified time limit toggle that keymap until any custom modifier is pressed
-//repeat
-void custom_mod_handler()
-{
-  map_use_last=map_use;
-
-  //this if checks whether the modifier was pressed and is being held
-  if(matrix_status[selector][modvar]==1 && (counter==0))
-    {
-      map_use=modvar_pos+1;
-    }
-  else //a series of scenarios need to be adressed
-  {
-    //loops through all cutom mods and checks if a different mod has been pressed
-    //the same mod doesn't count since it would reset the counter variable
-    //in case of true then the varaibles are reset and modvar is set to the matching map
-    for(int i=0; i<NUM_CUSTOM_MODS; i++)
-    {
-      if((matrix_status[selector][(custom_mods[i])]==1) && (custom_mods[i]!=modvar))
-      {
-        modvar=custom_mods[i];
-        modvar_pos=i;
-        counter=0;
-        toggle=0;
-        map_use=modvar_pos+1;
-        i=NUM_CUSTOM_MODS+1;
-      }
-    }
-  
-    //this condition will be true if the user releases his last pressed modifier and hasn't pressed a new one
-    //it adds to the counter that determines the double tap window
-    if(matrix_status[selector][modvar]==0 && counter<100)
-    {
-      ++counter;
-      map_use=0;
-    }
-    //these are the conditions nescessary for a toggle
-    //the modifier has to be pressed and the counter is less than the threshold
-    //the counter can't be zero otherwise this would be true as the presses the modifier
-    else if(matrix_status[selector][modvar]==1 && counter<100 && counter!=0)
-    {
-      toggle=1;
-      counter==0;
-      toggle_map=modvar_pos+1;
-    }
-    //if counter exceeds the threshold then modvar is reset
-    else if(counter>=100)
-    {
-      modvar=0;
-    }
-    //this is the default case
-    else map_use=0;
-  }
-  if(toggle==1) map_use=toggle_map; //if toggle true uses it instead
-
-  return;
-}
 
 
 
