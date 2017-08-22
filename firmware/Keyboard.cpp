@@ -2,7 +2,7 @@
 
 #define NUMLAYERS
 #define LAYERVALUE
-typedef enum behavior_enum {normal, hold, doubletap, clear, mod, macro, dth, ghost} behavior_enum; 
+typedef enum behavior_enum {normal, hold, doubletap, clear, macro, dth, ghost} behavior_enum; 
 
 typedef struct key_data
 {
@@ -20,19 +20,27 @@ typedef struct key
 
 key matrix[NUMKEYS];
 
-int modstate;
+int tempmodvar=0, modvar=0;
 
 uint8_t out_buffer[8]={0};
 
 int row[NUM_ROW] = {1,21,2,3};
 int col[NUM_COLL] = {4,5,6,7,8,9,10,16,14,15,18,19,20};
 
+int layers[NUMLAYERS] = {LAYERVALUE};
 
 int mapping[NUM_CUSTOM_MODS+1][NUM_KEYS] =
 {
 };
 
-
+int modvar_translator(int modval)
+{
+	if(modval==0) return 0;
+	for(int i=0; i<NUMLAYERS; i++)
+	{
+		if(layers[i]==modval) return i+1;
+	}
+}
 // initialize microcontroller
 // sets rows as outputs and colls as inputs
 // begins serial communication
@@ -73,10 +81,7 @@ void matrix_scan()
   return;
 }
 
-void layer_selector()
-{
 
-}
 
 
 
@@ -88,42 +93,52 @@ void layer_selector()
 //finally it writes the buffer
 void key_sender()
 {
-  
-  if(map_use!=map_use_last) 
-  {
-   flush();
-   for(int i=0; i<NUM_COLL*NUM_ROW; i++)
-   {
-     if(matrix_status[selector][i]==1)	
-	 {
-		if(profile[map_use][i].key_type==0) add_to_buffer(profile[0][i].key_code);
-	 }
-   }
-  }
-   
-   else
-   {
-
-     for(int i=0; i<NUM_COLL*NUM_ROW; i++)
-       {
-         if((matrix_status[selector][i]==1) && (matrix_status[!selector][i]==0))
-           {
-             add_to_buffer(mapping[map_use][i]);
-           }
-
-         else if((matrix_status[selector][i]==0) && (matrix_status[!selector][i]==1))
-           {
-             remove_from_buffer(mapping[map_use][i]);
-           }
-       }
-  }
-  write_buffer();
-  return;
+	for(int i=0; i<NUM_COLL*NUM_ROW; i++)
+	{
+		key_handler(matrix[i]);
+	}
+	return;
 }
 
+void key_handler(key* current_key)
+{
+	if(current_key->state==0 && current_key->important==0) return;
 
+    if(current_key->data[modvar_translator(modvar)]->behavior==normal) key_handler_normal(current_key);
+	else if
 
+	return ;
+}
 
+void normal_key_handler(key* current_key)
+{
+	int keycode;
+	if(current_key->state==1 && current_key->important==1) return;
+	if(current_key->state==0 && current_key->important==1) //is called when key has been released but its info is still on buffer and/or layervar
+	{
+		keycode=current_key->on_buffer;
+
+		modvar= (keycode>>16)^modvar; //isolates the layer byte from keycode and XOR with layer var to remove it
+		remove_from_buffer(keycode);
+
+		current_key->on_buffer=-1;
+		current_key->important=0;
+	}
+	else if(current_key->state==1 && current_key->important==0) //key pressed and not on buffer
+	{
+		keycode=current_key->data[modvar_translator(modvar)]->keycode; 
+		modvar= (keycode>>16)|modvar; //ORs layer byte value of keycode to layervar
+
+		current_key->on_buffer= add_to_buffer(keycode); //calls add to buffer and writes the return to on_buffer variable
+
+		if(current_key->on_buffer != -1)//add to buffer returns -1 if buffer is full. that if it is full important remains 0 and key is proccessed next cycle
+		{ 
+		current_key->on_buffer=((keycode&FFFF00)|current_key->on_buffer);//sets the 2nd byte of on buffer with HID Modifiers used and the 3rd byte with layer value. Info needed for effective removal from buffer
+		current_key->important=1; //important=1 is important.... 
+		}
+	}
+	return;
+}  
 
 
 //USB related functions
@@ -179,7 +194,7 @@ uint8_t parse_hidkey_byte(int key)
 int add_to_buffer(int key)
 {
   uint8_t mods,hidkey;
-  int result=1;
+  int result=-1;
 
   hidkey=parse_hidkey_byte(key);
   mods=parse_mod_byte(key);
@@ -190,8 +205,9 @@ int add_to_buffer(int key)
     if(out_buffer[k]==0) 
     {
        out_buffer[k]=hidkey;
+       result=k;
        k=9;
-       result=0;
+
     }
   }
   //OR's modifiers byte to add em up
@@ -208,22 +224,17 @@ int add_to_buffer(int key)
 //returns 1 if key was not found on buffer
 int remove_from_buffer(int key)
 {
-  uint8_t mods,hidkey;
-  int result=1;
+  uint8_t mods,bufferpos;
+  int result=0;
 
-  hidkey=parse_hidkey_byte(key);
-  mods=parse_mod_byte(key);
+	bufferpos=(key&0000FF);
+	mods=((key>>8)&0000FF)
 
-//searchs for a keymatch on the buffer then removes it
-  for(int k=2;k<8;k++)
-  { 
-    if(out_buffer[k]==hidkey) 
-    {
-      out_buffer[k]=0;
-      k=9;
-      result=0;
-    }
-  }
+
+	out_buffer[bufferpos]=0;
+
+
+
 //XOR's modifiers byte to subtract new ones
   out_buffer[0] = out_buffer[0]^mods;
   return result;
