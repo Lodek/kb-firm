@@ -2,8 +2,8 @@
 #define NUM_ROW 4
 #define NUM_PINS NUM_ROW+NUM_COLL
 #define NUM_KEYS NUM_COLL*NUM_ROW
-#define NUMLAYERS 1
-#define LAYERVALUE 0
+#define NUMLAYERS 3
+#define LAYERVALUE 0,1,2
 #include <Arduino.h>
 
 //possible behaviors of a key
@@ -17,7 +17,7 @@ typedef struct
 {
   //defines the behavior of said key
   behavior_enum behavior;
-    int keycode; 
+  long keycode; 
   //contains the 3 byte code that carries the HID scan code, HID modifier code and layer value
   //it can also contain the pointer to an struct for different key behaviors
 } key_data;
@@ -27,8 +27,8 @@ typedef struct
 //the array carries the data/behavior of the key for each layer defined by the user
 typedef struct
 {
-  int important, on_buffer, state;
-  
+  int important, state;
+  long on_buffer;
   key_data data[NUMLAYERS];
   
 } key;
@@ -40,12 +40,12 @@ int layervar_translator(int layer);
 
 void matrix_scan();
 void matrix_iterator();
-void key_handler(key current_key);
+void key_handler(key* current_key);
 
-void behavior_normal(key current_key);
+void behavior_normal(key* current_key);
 
-int add_to_buffer(int key);
-int remove_from_buffer(int key);
+int add_to_buffer(long key);
+int remove_from_buffer(long key);
 void flush();//zero out buffer
 void write_buffer();//sends buffer to host
 

@@ -3,7 +3,6 @@
 void setup() 
 {
   startup_routine();
-  init_mappings();
 }
 
 void loop() 
