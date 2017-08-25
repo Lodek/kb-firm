@@ -8,18 +8,20 @@
 
 //possible behaviors of a key
 typedef enum
-{
-normal, hold, doubletap, clear, macro, dth, dead
-} behavior_enum; 
+{normal, hold, doubletap, clear, macro, dth, dead} behavior_enum; 
 
 //struct that stores the information of each key for each layer
 typedef struct
 {
-  //defines the behavior of said key
-  behavior_enum behavior;
-  long keycode; 
-  //contains the 3 byte code that carries the HID scan code, HID modifier code and layer value
-  //it can also contain the pointer to an struct for different key behaviors
+	//defines the behavior of said key
+    behavior_enum behavior;
+
+    //contains either a pointer to a struct of type hold, doubletap...
+	//or carries the keycode on the format 0xLLMMKK
+	//where LL the byte for layer selection
+	//MM is the byte for HID modifiers
+	//KK is the byte for HID key  
+    long keycode; 
 } key_data;
 
 //actual definition of a key
@@ -27,26 +29,30 @@ typedef struct
 //the array carries the data/behavior of the key for each layer defined by the user
 typedef struct
 {
-  int important, state;
-  long on_buffer;
-  key_data data[NUMLAYERS];
+	int state; // state of the key (1/0) from the time the matrix was scanned
+    int important; //ON/OFF is not enough to track a key, this allows the code to decide whether this key requires attention or not
+    long on_buffer;
+	// on buffer has value of -1 if the key is not on the buffer/is not being used for layer
+	//otherwise it follows a similar format to the keycode variable
+	//0xLLMMBB
+	//LL is the layer byte
+	// MM HID mod byte
+	// BB is the difference, it instead of containing the HID keycode, it carries the position of that key on the out_buffer array
+    
+	key_data data[NUMLAYERS]; //array with the data of the behavior/function of this key for each layer
   
 } key;
 
 void startup_routine(); //sets up the pins in the arduino
 void _begin(); //serial?
 void init_mappings();
-int layervar_translator(int layer);
-
 void matrix_scan();
 void matrix_iterator();
 void key_handler(key* current_key);
-
 void behavior_normal(key* current_key);
-
-int add_to_buffer(long key);
-int remove_from_buffer(long key);
 void flush();//zero out buffer
 void write_buffer();//sends buffer to host
 
-
+int layervar_translator(int layer);
+int add_to_buffer(long key);
+int remove_from_buffer(long key);
