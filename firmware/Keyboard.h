@@ -1,3 +1,4 @@
+#include "behavior_struct.h"
 #include <Arduino.h>
 #define NUM_COLL 13
 #define NUM_ROW 4
@@ -5,11 +6,10 @@
 #define NUM_KEYS NUM_COLL*NUM_ROW
 #define NUMLAYERS 3
 #define LAYERVALUE 0,1,2
-
+#define HOLD_SLEEP 150
 
 //possible behaviors of a key
 typedef enum {normal, hold, doubletap, clear, macro, dth, dead} behavior_enum; 
-
 
 typedef struct
 {
@@ -37,7 +37,7 @@ typedef struct
 	otherwise it follows a similar format to the keycode variable: 0xLLMMBB
 	LL is the layer byte,  MM HID mod byte
 	BB carries the position of that key on the out_buffer array */
-    long on_buffer;
+    long buffer_value;
     
 	key_data data[NUMLAYERS]; //array with the data of the behavior/function of this key for each layer
   
@@ -56,9 +56,12 @@ void write_buffer();//sends buffer to host
 
 //Behavior functions
 void behavior_normal(key* current_key); //handles "normal" keys
+void hold_behavior(key* current_key);
 
 //Utility functions
-int add_to_buffer(long key);//receives a standard key, parses it and add to buffer
-int remove_from_buffer(long key);//receives std key, parses it and erases it from buffer
+void add_to_buffer(long key, long *on_buffer, int *important);//receives a standard key, parses it and add to buffer
+void remove_from_buffer(long *on_buffer, int *important);//receives std key, parses it and erases it from buffer
 void flush();//zero out buffer
-int layervar_translator(int layer); //function that returns the index for the corresponding VALUE of a layer.
+int layervar_translator(); //function that returns the index for the corresponding VALUE of a layer.
+void get_status(key *current_key);
+

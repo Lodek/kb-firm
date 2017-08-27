@@ -6,7 +6,7 @@ key matrix[NUM_KEYS];
 
 //int that stores which layer is being used
 int layervar = 0;
-
+int index;
 //buffer to output USB data
 uint8_t out_buffer[8] = {0};
 
@@ -25,13 +25,15 @@ long mapping[NUMLAYERS][NUM_KEYS] =
 	{0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f, 0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x002a, 0x002a, 0x0039, 0x007f, 0x0081, 0x0080, 0x0074, 0x0078, 0x0050, 0x0051, 0x0052, 0x004f, 0x0048, 0x0045, 0x0028, 0x0200, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x004a, 0x004e, 0x004b, 0x004d, 0x0046, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x010000, 0x0028, 0x0028, 0x020000, 0x0000, 0x0000, 0x0000, 0x1000, 0x002c},
 };
 
+hold_struct key_test;
+
 // Initialize functions
 void init_mappings()
 {
 	for (int i = 0; i < NUM_KEYS; i++)
     {
 		 matrix[i].important = 0;
-         matrix[i].on_buffer = 0;
+         matrix[i].buffer_value = -1;
          matrix[i].state = 0;
          for (int j = 0; j < NUMLAYERS; j++)
          {
@@ -66,6 +68,11 @@ void startup_routine()
         pinMode(col_pins[i], INPUT);
     _begin();
     init_mappings();
+	
+	key_test.tap= 0x002b;
+	key_test.hold=0x0014;
+	matrix[0].data[0].keycode = (long) &key_test;
+    matrix[0].data[0].behavior=hold;
     return;
 }
 
@@ -94,9 +101,9 @@ void matrix_scan()
 void matrix_iterator()
 {
 	//calls the key handler for each element of the matrix array
-    for (int i = 0; i < NUM_COLL * NUM_ROW; i++)
+    for (index = 0; index < NUM_COLL * NUM_ROW; index++)
     {
-		key_handler(&matrix[i]);
+		key_handler(&matrix[index]);
     }
     return;
 }
@@ -107,9 +114,10 @@ void key_handler(key *current_key)
 	/* key handler receives a key struct object
 	it first checks whether the key needs to be handled
 	then it checks the key behavior and sends calls the appropriate handler function for that key type */
-    (current_key->state == 0 && current_key->important == 0) return; // key is neither pressed nor important
+    if(current_key->state == 0 && current_key->important == 0) return; // key is neither pressed nor important
 
-    if (current_key->data[layervar_translator(layervar)].behavior == normal) behavior_normal(current_key); // normal key
+    if (current_key->data[layervar_translator()].behavior == normal) behavior_normal(current_key); // normal key
+    if (current_key->data[layervar_translator()].behavior==hold) hold_behavior(current_key);
     return ;
 }
 
@@ -126,47 +134,52 @@ void write_buffer()
 
 void behavior_normal (key *current_key)
 {
-    long keycode;
-  
     if (current_key->state == 1 && current_key->important == 1) return; //key was and still is pressed, nothig to be done
 
     if (current_key->state == 0 && current_key->important == 1) //is called when key has been released but its info is still on buffer and/or layervar
     {
-        keycode = current_key->on_buffer;
-        remove_from_buffer(keycode);
-        current_key->on_buffer = -1;
-        current_key->important = 0;
+        remove_from_buffer(&current_key->buffer_value, &current_key->important);
     }
   
     else if (current_key->state == 1 && current_key->important == 0) //key pressed and not on buffer
     {
-        keycode = current_key->data[layervar_translator(layervar)].keycode;
-        current_key->on_buffer = add_to_buffer(keycode); //calls add to buffer and writes the return to on_buffer variable
-
-        if (current_key->on_buffer != -1)
-        {
-		    //add to buffer returns -1 if buffer is full. if buffer is full important remains 0 and key is proccessed next cycle
-	        //sets the 2nd byte of on buffer with HID Modifiers used and the 3rd byte with layer value. Info needed for effective removal from buffer
-            current_key->on_buffer = ((keycode & 0xFFFF00) | current_key->on_buffer);
-            current_key->important = 1; //important=1 is important....
-        }
+	add_to_buffer(current_key->data[layervar_translator()].keycode, &current_key->buffer_value, &current_key->important); //calls add to buffer and writes the return to buffer_value variable
     }
     return;
 }
 
 
+void hold_behavior(key* current_key)
+{
+  	hold_struct *key_data = (hold_struct *) current_key->data[layervar_translator()].keycode;
+
+	if(current_key->state == 1 && current_key->important==1) return;
+	if(current_key->state == 0 && current_key->important==1)
+	{
+		remove_from_buffer(&current_key->buffer_value, &current_key->important);
+	}      
+	else if(current_key->state==1 && current_key->important ==0)
+	{
+		delay(HOLD_SLEEP);
+		get_status(current_key);
+		if(current_key->state == 0) add_to_buffer(key_data->tap, &current_key->buffer_value, &current_key->important); 
+		else if(current_key->state==1) add_to_buffer(key_data->hold, &current_key->buffer_value, &current_key->important);
+	}	
+	return;
+}
+
+
 //Utility functions
 
-int add_to_buffer(long key)
+void add_to_buffer(long key, long* buffer_value, int* important)
 {
 	/* Receives a key and does 3 operations. Returns the index of out_buffer where the HID Keycode was written to. If buffer is full, returns -1. 
 	a - isolates and adds HID Keycode part of key to out_buffer (first byte of key, bitshifts and ANDs to isolate it).
 	b - isolates and appends (ORs) HID modifier to out_buffer[0] (second byte of key).
 	c - isolates and appends (ORs) layer byte of key to layervar (third byte of key) */
-	int result = -1; 
 	//In case key's 1st byte is 0, return 1. 1 is the reserved byte of the HID descriptor
 	//Needed since otherwise 2 keys might point to the same index of out_buffer. Then releasing a key would release both and lead to an awkward situation
-	if(key&0x0000FF==0) result=1;
+	if(key&0x0000FF==0) *buffer_value=1;
 	else
 	{
 	    for (int k = 2; k < 8; k++) //loops through out buffer looking for the first empty spot
@@ -174,28 +187,38 @@ int add_to_buffer(long key)
 	        if (out_buffer[k] == 0)
 	        {
 				out_buffer[k] = (key&0x0000FF); //a
-				result = k;
+				*buffer_value = k;
 				k = 9;
 			}
 	    }
 	}
+	if(*buffer_value==-1)
+	{
+		*important=0;
+		return;
+	}
     out_buffer[0] = out_buffer[0] | ((key >> 8) & 0x0000FF); //b 
     layervar = (key >> 16) | layervar; //c 
-    return result;
+	*important=1;
+	*buffer_value=(key&0xFFFF00) | *buffer_value;
+    return ;
 }
 
 
-int remove_from_buffer(long key)
+void remove_from_buffer(long *buffer_value, int *important)
 {
 	/*removes the received key from the buffer and removes its value from layer var
 	3 removal steps
 	a - Removes key from buffer. Isolates first byte of key which contains the position of that key on out_buffer
 	b - Removes modfier from buffer. Isolates second byte of key. That byte contais HID Mod code. Uses the data and XOR's it with the modifier byte of out_buffer
 	c - Removes layer value from layervar. Isolates third byte of key which has layer value. Similarly, XOR's it with layervar to subtract its value */
-    out_buffer[(key & 0x0000FF)] = 0; //a
-	out_buffer[0] = out_buffer[0] ^ ((key >> 8) & 0x0000FF);//b
-    layervar = (key >> 16)^layervar;//c
-    return 0;
+    out_buffer[(*buffer_value & 0x0000FF)] = 0; //a
+	out_buffer[0] = out_buffer[0] ^ ((*buffer_value >> 8) & 0x0000FF);//b
+    layervar = (*buffer_value >> 16)^layervar;//c
+
+	*buffer_value=-1;
+	*important=0;
+    return;
 }
 
 
@@ -207,8 +230,17 @@ void flush()
 }
 
 
-int layervar_translator(int layer)
+int layervar_translator()
 {
 	//function that returns the index for the corresponding VALUE of a layer (1,2,4,8...)
-    for (int i = 0; i < NUMLAYERS ; i++) if (layers[i] == layer) return i;
+    for (int i = 0; i < NUMLAYERS ; i++) if (layers[i] == layervar) return i;
+}
+
+
+void get_status(key *current_key)
+{
+	digitalWrite(row_pins[index / NUM_COLL], HIGH);
+	current_key->state = digitalRead(col_pins[index % NUM_COLL]);
+	digitalWrite(row_pins[index / NUM_COLL], LOW);
+	return;
 }
