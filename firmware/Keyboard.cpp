@@ -35,6 +35,7 @@ void init_mappings()
 		 matrix[i].important = 0;
          matrix[i].buffer_value = -1;
          matrix[i].state = 0;
+         matrix[i].toggle = 0;
          for (int j = 0; j < NUMLAYERS; j++)
          {
             matrix[i].data[j].behavior = normal;
@@ -115,6 +116,8 @@ void key_handler(key *current_key)
 	it first checks whether the key needs to be handled
 	then it checks the key behavior and sends calls the appropriate handler function for that key type */
     if(current_key->state == 0 && current_key->important == 0) return; // key is neither pressed nor important
+	if(current_key->state == 1 && current_key->important == 1) return;
+	if(current_key->state == 0 && current_key->important == 1) remove_from_buffer(current_key); 
 
     if (current_key->data[layervar_translator()].behavior == normal) behavior_normal(current_key); // normal key
     if (current_key->data[layervar_translator()].behavior==hold) hold_behavior(current_key);
@@ -171,7 +174,7 @@ void hold_behavior(key* current_key)
 
 //Utility functions
 
-void add_to_buffer(long key, long* buffer_value, int* important)
+void add_to_buffer(key* current_key)
 {
 	/* Receives a key and does 3 operations. Returns the index of out_buffer where the HID Keycode was written to. If buffer is full, returns -1. 
 	a - isolates and adds HID Keycode part of key to out_buffer (first byte of key, bitshifts and ANDs to isolate it).
@@ -179,6 +182,7 @@ void add_to_buffer(long key, long* buffer_value, int* important)
 	c - isolates and appends (ORs) layer byte of key to layervar (third byte of key) */
 	//In case key's 1st byte is 0, return 1. 1 is the reserved byte of the HID descriptor
 	//Needed since otherwise 2 keys might point to the same index of out_buffer. Then releasing a key would release both and lead to an awkward situation
+	long key=current_key->data[layervar].keycode;
 	if(key&0x0000FF==0) *buffer_value=1;
 	else
 	{
@@ -186,7 +190,7 @@ void add_to_buffer(long key, long* buffer_value, int* important)
 	    {
 	        if (out_buffer[k] == 0)
 	        {
-				out_buffer[k] = (key&0x0000FF); //a
+				out_buffer[k] = (key&0x000000FF); //a
 				*buffer_value = k;
 				k = 9;
 			}
@@ -197,10 +201,11 @@ void add_to_buffer(long key, long* buffer_value, int* important)
 		*important=0;
 		return;
 	}
-    out_buffer[0] = out_buffer[0] | ((key >> 8) & 0x0000FF); //b 
+	if(key>>24==1) current_key->toggle=1;
+    out_buffer[0] = out_buffer[0] | ((key >> 8) & 0x000000FF); //b 
     layervar = (key >> 16) | layervar; //c 
 	*important=1;
-	*buffer_value=(key&0xFFFF00) | *buffer_value;
+	*buffer_value=(key&0xFFFFFF00) | *buffer_value;
     return ;
 }
 
@@ -212,8 +217,9 @@ void remove_from_buffer(long *buffer_value, int *important)
 	a - Removes key from buffer. Isolates first byte of key which contains the position of that key on out_buffer
 	b - Removes modfier from buffer. Isolates second byte of key. That byte contais HID Mod code. Uses the data and XOR's it with the modifier byte of out_buffer
 	c - Removes layer value from layervar. Isolates third byte of key which has layer value. Similarly, XOR's it with layervar to subtract its value */
-    out_buffer[(*buffer_value & 0x0000FF)] = 0; //a
-	out_buffer[0] = out_buffer[0] ^ ((*buffer_value >> 8) & 0x0000FF);//b
+	if(current_key->buffer_value>>24==1) return;
+    out_buffer[(*buffer_value & 0x000000FF)] = 0; //a
+	out_buffer[0] = out_buffer[0] ^ ((*buffer_value >> 8) & 0x000000FF);//b
     layervar = (*buffer_value >> 16)^layervar;//c
 
 	*buffer_value=-1;
