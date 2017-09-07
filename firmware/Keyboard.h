@@ -32,7 +32,6 @@ typedef struct
 	the array carries the data/behavior of the key for each layer defined by the user */
 	int state; // state of the key (1/0) from the time the matrix was scanned
     int important; //ON/OFF is not enough to track a key, this allows the code to decide whether this key requires attention or not
-	char toggle;
 	/* on buffer has value of -1 if the key is not on the buffer/is not being used for layer
 	otherwise it follows a similar format to the keycode variable: 0xLLMMBB
 	LL is the layer byte,  MM HID mod byte
@@ -59,8 +58,8 @@ void behavior_normal(key* current_key); //handles "normal" keys
 void hold_behavior(key* current_key);
 
 //Utility functions
-void add_to_buffer(key* current_ker);//receives a standard key, parses it and add to buffer
+void add_to_buffer(key* current_key, long key);//receives a standard key, parses it and add to buffer
 void remove_from_buffer(key* current_key);//receives std key, parses it and erases it from buffer
 void flush();//zero out buffer
-int layervar_translator(); //function that returns the index for the corresponding VALUE of a layer.
+void layervar_translator(); //function that returns the index for the corresponding VALUE of a layer.
 void get_status(key *current_key);
