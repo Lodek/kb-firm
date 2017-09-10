@@ -4,27 +4,29 @@
 //it contains all information regarding the keyboard
 key matrix[NUM_KEYS]; 
 
-//int that stores which layer is being used
-int layervar = 0;
-int translated_layervar=0;
-int index;
-//buffer to output USB data
-uint8_t out_buffer[8] = {0};
+
+int layervar = 0; //int that stores which layer is being used
+int translated_layervar=0; //layervar after going through translated function. Used as index for key.data[translated_layervar] calls
+int index;//int used to iterate through matrix
+
+uint8_t out_buffer[8] = {0}; //buffer to output USB data
 
 //physical pin number for each row and collunm
 int row_pins[NUM_ROW] = {1, 21, 2, 3};
 int col_pins[NUM_COLL] = {4, 5, 6, 7, 8, 9, 10, 16, 20, 15, 19, 14, 18};
 
-//array that makes the matching of index number of layer with the value utilized by layer var
-int layers[NUMLAYERS] = {LAYERVALUE};
+
+int layers[NUMLAYERS] = {LAYERVALUE}; //array that makes the matching of index number of layer with the value utilized by layer var
 
 //user defined mappings for each key
 long mapping[NUMLAYERS][NUM_KEYS] =
 {
-	{0x0100002b, 0x0014, 0x001a, 0x0008, 0x0015, 0x0017, 0x001c, 0x0018, 0x000c, 0x0012, 0x0013, 0x002a, 0x002a, 0x0029, 0x0004, 0x0016, 0x0007, 0x0009, 0x000a, 0x000b, 0x000d, 0x000e, 0x000f, 0x0033, 0x0034, 0x0028, 0x0200, 0x001d, 0x001b, 0x0006, 0x0019, 0x0005, 0x0011, 0x0010, 0x0036, 0x0037, 0x0038, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x010000, 0x002c, 0x002c, 0x020000, 0x0000, 0x0000, 0x0000, 0x1000, 0x004c},
+	{0x0000002b, 0x0014, 0x001a, 0x0008, 0x0015, 0x0017, 0x001c, 0x0018, 0x000c, 0x0012, 0x0013, 0x002a, 0x002a, 0x0029, 0x0004, 0x0016, 0x0007, 0x0009, 0x000a, 0x000b, 0x000d, 0x000e, 0x000f, 0x0033, 0x0034, 0x0028, 0x0200, 0x001d, 0x001b, 0x0006, 0x0019, 0x0005, 0x0011, 0x0010, 0x0036, 0x0037, 0x0038, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x010000, 0x002c, 0x002c, 0x020000, 0x0000, 0x0000, 0x0000, 0x1000, 0x004c},
 	{0x0037, 0x0024, 0x0025, 0x0026, 0x2024, 0x2025, 0x002d, 0x0031, 0x0038, 0x2026, 0x2027, 0x002a, 0x002a, 0x0027, 0x0021, 0x0022, 0x0023, 0x2021, 0x2022, 0x2023, 0x2036, 0x2037, 0x202f, 0x2030, 0x2031, 0x0028, 0x0200, 0x001e, 0x001f, 0x0020, 0x201e, 0x201f, 0x2020, 0x002e, 0x0035, 0x002f, 0x0030, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x010000, 0x002a, 0x002a, 0x020000, 0x0000, 0x0000, 0x0000, 0x1000, 0x002c},
 	{0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f, 0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x002a, 0x002a, 0x0039, 0x007f, 0x0081, 0x0080, 0x0074, 0x0078, 0x0050, 0x0051, 0x0052, 0x004f, 0x0048, 0x0045, 0x0028, 0x0200, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x004a, 0x004e, 0x004b, 0x004d, 0x0046, 0x2000, 0x0028, 0x0100, 0x0800, 0x0400, 0x0000, 0x010000, 0x0028, 0x0028, 0x020000, 0x0000, 0x0000, 0x0000, 0x1000, 0x002c},
 };
+
+doubletap_data k0l0;
 
 // Initialize functions
 void init_mappings()
@@ -67,15 +69,17 @@ void startup_routine()
         pinMode(col_pins[i], INPUT);
     _begin();
     init_mappings();
-	
+
+	k0l0.tap=0x0000002b;
+	k0l0.doubletap=0x00000014;
+	matrix[0].data[0].keycode = (long) &k0l0;
+   	matrix[0].data[0].behavior = doubletap;
     return;
 }
 
 
 
 // Loop functions
-
-
 void matrix_scan()
 {
 	/* uses col_pins & row_pins
@@ -119,8 +123,9 @@ void key_handler(key *current_key)
 		return;
 	}
 
-    if (current_key->data[translated_layervar].behavior == normal) behavior_normal(current_key); //normal key
+    if (current_key->data[translated_layervar].behavior == normal) normal_behavior(current_key); //normal key
 	else if (current_key->data[translated_layervar].behavior==hold) hold_behavior(current_key); //hold key
+	else if (current_key->data[translated_layervar].behavior==doubletap) doubletap_behavior(current_key);
     return ;
 }
 
@@ -134,8 +139,7 @@ void write_buffer()
 
 
 //Behavior Functions
-
-void behavior_normal (key *current_key)
+void normal_behavior (key *current_key)
 {
 	// Simple handler for a normal key. If key is pressed add it to buffer
 	add_to_buffer(current_key, current_key->data[translated_layervar].keycode); //calls add to buffer and writes the return to buffer_value variable
@@ -151,18 +155,82 @@ void hold_behavior(key* current_key)
 	sleep the MCU for HOLD SLEEP ms
 	checks, if key still pressed, add to buffer using the hold keycode
 	else uses the tap keycode */
-  	hold_struct *key_data = (hold_struct *) current_key->data[translated_layervar].keycode;
+  	hold_data *data = (hold_data *) current_key->data[translated_layervar].keycode;
 
 	delay(HOLD_SLEEP);
 	get_status(current_key);
-	if(current_key->state == 0) add_to_buffer(current_key, key_data->tap); 
-	else if(current_key->state==1) add_to_buffer(current_key, key_data->hold);
+	if(current_key->state == 0) add_to_buffer(current_key, data->tap); 
+	else if(current_key->state==1) add_to_buffer(current_key, data->hold);
 	return;
 }
 
 
-//Utility functions
+void doubletap_behavior(key *current_key)
+{
+	doubletap_data *data = (doubletap_data *) current_key->data[translated_layervar].keycode;
+	
+	delay(DOUBLETAP_RELEASE_DELAY);
+	get_status(current_key);
+	if(current_key->state == 1)
+	{
+		add_to_buffer(current_key, data->tap);
+		return;
+	}
+	else 
+	{
+		delay(DOUBLETAP_TAP_DELAY);
+		get_status(current_key);
+		if(current_key->state == 0)
+		{
+			add_to_buffer(current_key, data->tap);
+			return;
+		}
+		else
+		{
+			add_to_buffer(current_key, data->doubletap);
+			return; 
+		}
+	}
+}
 
+
+void clear_behavior(key *current_key)
+{
+	long data = current_key->data[0].keycode;
+	add_to_buffer(current_key, data);
+}
+
+
+void dtaphold_behavior(key *current_key)
+{
+	dtaphold_data *data = (dtaphold_data *) current_key->data[translated_layervar].keycode;
+
+	delay(DTAPHOLD_RELEASE_DELAY);
+	get_status(current_key);
+	if(current_key->state == 1)
+	{
+		add_to_buffer(current_key, data->hold);
+		return;
+	}
+	else 
+	{
+		delay(DTAPHOLD_TAP_DELAY);
+		get_status(current_key);
+		if(current_key->state == 0)
+		{
+			add_to_buffer(current_key, data->tap);
+			return;
+		}
+		else
+		{
+			add_to_buffer(current_key, data->doubletap);
+			return; 
+		}
+	}	
+}
+
+
+//Utility functions
 void add_to_buffer(key* current_key, long key)
 {
 	/* Receives a key and does 3 operations. Returns the index of out_buffer where the HID Keycode was written to. If buffer is full, returns -1.
