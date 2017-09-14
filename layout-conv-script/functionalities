@@ -1,0 +1,29 @@
+mappings 
+//toggle
+//layers
+
+a - normal key 
+	mod-key
+	takes word (word is whatever is between spaces), looks for length. If 1, look up in hash table. Else, looks for - and breaks into chunks. mod chunk (left), key chunk (right), discard -
+
+ex cmg-c
+   c
+   spc
+   ctrl   
+   gui
+
+b special keys
+	// keytype key-code key-code key-code
+	// will be a escape sequence to indicate a "special key" 
+	define in script documentation the order which the keys will be interpreted 
+
+	// 
+As for initializing in C. Outbut can be a matrix of char * and each element is a string literally. 
+char *mappings[NUM_KEYS][NUM_LAYERS] = 
+{ {"###0x00000000", ...}, 
+  ....
+}
+
+The script always output the first 3 characters being numbers matching the type of they key according to the enum. After that the string can be be broken into blocks of 10 characters. Each block will be a keycode accodring to the std set on my code 0xTTLLMMKK Toggle, layer, mod, key. 
+
+Forgot how to represent toggle keys

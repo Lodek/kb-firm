@@ -14,5 +14,5 @@ typedef struct
 {
 	long tap;
 	long doubletap;
-	long hold
+	long hold;
 } dtaphold_data;
