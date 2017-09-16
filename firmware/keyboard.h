@@ -1,9 +1,31 @@
-#include "behavior_struct.h"
 #include "defines.h"
-#include "start.h"
 #include <Arduino.h>
 
 typedef enum {normal, hold, doubletap, clear, dtaphold, macro, dead} key_behavior; //possible behaviors of a key
+
+
+
+typedef struct
+{
+	long tap;
+	long hold;
+} hold_data;
+
+
+typedef struct
+{
+	long tap;
+	long doubletap;
+} doubletap_data;
+
+
+typedef struct
+{
+	long tap;
+	long doubletap;
+	long hold;
+} dtaphold_data;
+
 
 typedef struct
 {
@@ -33,10 +55,14 @@ typedef struct
 	BB carries the position of hat key on the out_buffer array */
     long buffer_value;
     
-	key_data data[NUMLAYERS]; //array with the keycode and the behavior/function of this key for each layer
+	key_data data[NUM_LAYERS]; //array with the keycode and the behavior/function of this key for each layer
   
 } key;
 
+extern key matrix[];
+extern char *mapping[NUM_LAYERS][NUM_KEYS];
+extern int row_pins[];
+extern int col_pins[];
 
 //Loop functions
 void matrix_scan();//performs the scan of the matrix and writes 1/0 to each key
@@ -44,6 +70,7 @@ void matrix_iterator();//iterates through each key and calls the handler functio
 void key_handler(key* current_key);//calls the appropriate handler for that key
 void write_buffer();//sends buffer to host
 
+void start();
 
 //Behavior functions
 void normal_behavior(key* current_key); //handles "normal" keys

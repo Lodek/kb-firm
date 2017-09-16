@@ -1,8 +1,8 @@
-#include "Keyboard.h"
+#include "keyboard.h"
 
 void setup() 
 {
-  startup_routine();
+  start();
 }
 
 void loop() 

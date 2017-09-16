@@ -1,4 +1,8 @@
 #include "start.h"
+#include "keyboard.h"
+#include <Arduino.h>
+#include "defines.h"
+
 void start_serial()
 {
 	/* begins commns serial communication
@@ -20,9 +24,6 @@ void start_gpio()
     }
     for (int i = 0; i < NUM_COLL; i++) //sets colls pins as IN
         pinMode(col_pins[i], INPUT);
-    _begin();
-    init_mappings();
-
     return;
 }
 
@@ -34,10 +35,10 @@ void start_keys()
 		 matrix[i].important = 0;
          matrix[i].buffer_value = -1;
          matrix[i].state = 0;
-         for (int j = 0; j < NUMLAYERS; j++)
+         for (int j = 0; j < NUM_LAYERS; j++)
          {
-            matrix[i].data[j].behavior = normal;
-			matrix[i].data[j].keycode = mapping[j][i];
+            matrix[i].data[j].behavior = clear;
+			matrix[i].data[j].keycode = 0;
          }
     }
     return;
@@ -59,17 +60,17 @@ void start_mapping()
 			{
 				behavior_str[i]=keycode_str[i];
 			}
-			sscanf(behavior_str, "%x", &behavior); //sscanf behavior str to get its num value
+			sscanf(behavior_str, "%lx", &behavior); //sscanf behavior str to get its num value
 			
 			keycode_str = keycode_str+10; //moves pointer of keycode to the next block of 10 characters
 			
-			int keycodes_len=strlen(keycodes);//num of characters in the string 
+			int keycodes_len=strlen(keycode_str);//num of characters in the string 
 			
 			if(behavior==normal)//early termination for normal key
 			{
 				matrix[current_key].data[current_layer].behavior=normal;
 				long normal_keycode;
-				sscanf(keycode_str, "%x", &normal_keycode);
+				sscanf(keycode_str, "%lx", &normal_keycode);
 				matrix[current_key].data[current_layer].keycode=normal_keycode;
 			}
 			
@@ -96,28 +97,29 @@ void start_mapping()
 					case hold:
 					hold_data *hold_keycode;
 					hold_keycode = (hold_data *) malloc (sizeof(hold_data));
-					sscanf(keycodes[0], "%x", &hold_keycode->tap);
-					sscanf(keycodes[1], "%x", &hold_keycode->hold);
+					sscanf(keycodes[0], "%lx", &hold_keycode->tap);
+					sscanf(keycodes[1], "%lx", &hold_keycode->hold);
 					matrix[current_key].data[current_layer].keycode= (long) hold_keycode;
+					matrix[current_key].data[current_layer].behavior = hold;
 					break;
 			
 					case doubletap:
 					doubletap_data *doubletap_keycode;
 					doubletap_keycode = (doubletap_data *) malloc(sizeof(doubletap_data));
-					sscanf(keycodes[0], "%x", &doubletap_keycode->tap);
-					sscanf(keycodes[0], "%x", &doubletap_keycode->doubletap);
-					matrix[current_key].data[current_layer].keycode= (long) hold_keycode;
-	
+					sscanf(keycodes[0], "%lx", &doubletap_keycode->tap);
+					sscanf(keycodes[1], "%lx", &doubletap_keycode->doubletap);
+					matrix[current_key].data[current_layer].keycode= (long) doubletap_keycode;
+					matrix[current_key].data[current_layer].behavior = doubletap;
 					break;
 			
 					case dtaphold:
 					dtaphold_data *dtaphold_keycode;
-					dtaphold_keycode = (dtaphold_keycode *) malloc(sizeof(dtaphold_data));
-					sscanf(keycodes[0], "%x", &dtaphold_keycode->tap);
-					sscanf(keycodes[0], "%x", &dtaphold_keycode->doubletap);
-					sscanf(keycodes[0], "%x", &dtaphold_keycode->hold);
-					matrix[current_key].data[current_layer].keycode= (long) hold_keycode;
-	
+					dtaphold_keycode = (dtaphold_data *) malloc(sizeof(dtaphold_data));
+					sscanf(keycodes[0], "%lx", &dtaphold_keycode->tap);
+					sscanf(keycodes[1], "%lx", &dtaphold_keycode->doubletap);
+					sscanf(keycodes[2], "%lx", &dtaphold_keycode->hold);
+					matrix[current_key].data[current_layer].keycode= (long) dtaphold_keycode;
+					matrix[current_key].data[current_layer].behavior = dtaphold;					
 					break;
 				}
 			}
