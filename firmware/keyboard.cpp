@@ -1,12 +1,13 @@
 #include "keyboard.h"
 #include "start.h"
 
-//data structure with an array of key objects
-key matrix[NUM_KEYS]; 
-
+key matrix[NUM_KEYS]; //data structure with an array of key objects
+char *mapping[NUM_LAYERS][NUM_KEYS] = {{L0},{L1}}; //user defined mappings for each key
+int layers[NUM_LAYERS] = {LAYER_VALUE}; //array that makes the matching of index number of layer with the value utilized by layer var
 
 int layervar = 0; //int that stores which layer is being used
 int translated_layervar=0; //layervar after going through translated function. Used as index for key.data[translated_layervar] calls
+
 int index;//int used to iterate through matrix
 
 uint8_t out_buffer[8] = {0}; //buffer to output USB data
@@ -14,12 +15,6 @@ uint8_t out_buffer[8] = {0}; //buffer to output USB data
 //physical pin number for each row and collunm
 int row_pins[NUM_ROW] = {ROW_PINS};
 int col_pins[NUM_COLL] = {COL_PINS};
-
-
-int layers[NUM_LAYERS] = {LAYER_VALUE}; //array that makes the matching of index number of layer with the value utilized by layer var
-
-//user defined mappings for each key
-char *mapping[NUM_LAYERS][NUM_KEYS] = {{L1}};
 
 
 void start()

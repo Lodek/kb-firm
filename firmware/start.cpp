@@ -125,5 +125,6 @@ void start_mapping()
 			}
 		}
 	}
+	return;
 }
 
