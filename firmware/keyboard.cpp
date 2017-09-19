@@ -2,28 +2,33 @@
 #include "start.h"
 
 key matrix[NUM_KEYS]; //data structure with an array of key objects
-char *mapping[NUM_LAYERS][NUM_KEYS] = {{L0},{L1}}; //user defined mappings for each key
-int layers[NUM_LAYERS] = {LAYER_VALUE}; //array that makes the matching of index number of layer with the value utilized by layer var
+uint8_t layers[NUM_LAYERS] = {LAYER_VALUE}; //array that makes the matching of index number of layer with the value utilized by layer var
 
-int layervar = 0; //int that stores which layer is being used
-int translated_layervar=0; //layervar after going through translated function. Used as index for key.data[translated_layervar] calls
+uint8_t layervar = 0; //int that stores which layer is being used
+uint8_t translated_layervar=0; //layervar after going through translated function. Used as index for key.data[translated_layervar] calls
 
-int index;//int used to iterate through matrix
+uint8_t index;//int used to iterate through matrix
 
 uint8_t out_buffer[8] = {0}; //buffer to output USB data
 
 //physical pin number for each row and collunm
-int row_pins[NUM_ROW] = {ROW_PINS};
-int col_pins[NUM_COLL] = {COL_PINS};
+uint8_t row_pins[NUM_ROW] = {ROW_PINS};
+uint8_t col_pins[NUM_COLL] = {COL_PINS};
 
 
 void start()
 {
+	start_serial();
 	start_gpio();
 	start_keys();
-	start_mapping();
+	start_l0();
+	start_l1();
+//	start_l2();
+//	start_mapping();
+//    matrix[0].data[1].keycode=0x00000004;
 	return;
 }
+
 
 // Loop functions
 void matrix_scan()
@@ -33,10 +38,10 @@ void matrix_scan()
 	writes result of digital read to the matching key on the matrix array
 	resets current row to low
 	repeats for next row */
-    for (int i = 0; i < NUM_ROW; i++)
+    for (uint8_t i = 0; i < NUM_ROW; i++)
     {
         digitalWrite(row_pins[i], HIGH);
-		for (int j = 0; j < NUM_COLL; j++)  matrix[i*NUM_COLL+j].state = digitalRead(col_pins[j]);
+		for (uint8_t j = 0; j < NUM_COLL; j++)  matrix[i*NUM_COLL+j].state = digitalRead(col_pins[j]);
 		digitalWrite(row_pins[i], LOW);
     }
     return;
@@ -199,7 +204,7 @@ void add_to_buffer(key* current_key, long key)
 	if((key&0x000000FF)==0) current_key->buffer_value=1; 
 	else
 	{
-	    for (int k = 2; k < 8; k++) //loops through out buffer looking for the first empty spot
+	    for (uint8_t k = 2; k < 8; k++) //loops through out buffer looking for the first empty spot
 	    {
 	        if (out_buffer[k] == 0)
 	        {
@@ -248,7 +253,7 @@ void remove_from_buffer(key *current_key)
 void flush()
 {
 	//loops through out_buffer zeroing all elements of the array
-    for (int i = 0; i < 8; i++) out_buffer[i] = 0;
+    for (uint8_t i = 0; i < 8; i++) out_buffer[i] = 0;
     return;
 }
 
@@ -256,7 +261,7 @@ void flush()
 void layervar_translator()
 {
 	//function that returns the index for the corresponding VALUE of a layer (1,2,4,8...)
-    for (int i = 0; i < NUM_LAYERS ; i++) if (layers[i] == layervar) translated_layervar=i;
+    for (uint8_t i = 0; i < NUM_LAYERS ; i++) if (layers[i] == layervar) translated_layervar=i;
 	return;
 }
 

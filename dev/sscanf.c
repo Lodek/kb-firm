@@ -2,7 +2,7 @@
 
 int main()
 {
-	char *hexcode="0xF";
+	char *hexcode="F";
 	int test;
 	sscanf(hexcode, "%x", &test);
 	printf("%d", test);

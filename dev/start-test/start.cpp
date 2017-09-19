@@ -7,17 +7,15 @@
 #include <stdlib.h>
 
 using namespace std;
-void single_key();
+
 key matrix[NUM_KEYS];
-char *mapping[NUM_LAYERS][NUM_KEYS] = {{L1}};
+char *mapping[NUM_LAYERS][NUM_KEYS] = {{L1},{L2}};
 
 int main()
 {
 	start_keys();
-	single_key();
-	
+	start_mapping();
 	return 0;
-	
 }
 
 void start_keys()
@@ -58,6 +56,10 @@ void start_mapping()
 			
 			int keycodes_len=strlen(keycode_str);//num of characters in the string 
 			
+			cout << behavior_str << "behavior str key " << current_key << " " << current_layer << '\n';
+			cout << keycode_str << "keycode str key " << current_key << " " << current_layer << '\n';
+
+			
 			if(behavior==normal)//early termination for normal key
 			{
 				matrix[current_key].data[current_layer].behavior=normal;
@@ -92,6 +94,7 @@ void start_mapping()
 					sscanf(keycodes[0], "%lx", &hold_keycode->tap);
 					sscanf(keycodes[1], "%lx", &hold_keycode->hold);
 					matrix[current_key].data[current_layer].keycode= (long) hold_keycode;
+					matrix[current_key].data[current_layer].behavior=hold;
 					break;
 			
 					case doubletap:
@@ -100,6 +103,7 @@ void start_mapping()
 					sscanf(keycodes[0], "%lx", &doubletap_keycode->tap);
 					sscanf(keycodes[0], "%lx", &doubletap_keycode->doubletap);
 					matrix[current_key].data[current_layer].keycode= (long) doubletap_keycode;
+					matrix[current_key].data[current_layer].behavior=doubletap;
 					break;
 			
 					case dtaphold:
@@ -109,91 +113,13 @@ void start_mapping()
 					sscanf(keycodes[0], "%lx", &dtaphold_keycode->doubletap);
 					sscanf(keycodes[0], "%lx", &dtaphold_keycode->hold);
 					matrix[current_key].data[current_layer].keycode= (long) dtaphold_keycode;
+					matrix[current_key].data[current_layer].behavior=dtaphold;
 					break;
 				}
 			}
+			cout << matrix[current_key].data[current_layer].behavior << " < behavior keycode > " << 					matrix[current_key].data[current_layer].keycode << '\n';
 		}
 	}
+	return;
 }
 
-void single_key()
-{
-			int current_key =0;
-			int current_layer=0;
-			char *keycode_str = mapping[0][0] ;//address of the string that contains the data for this key
-			char keycodes[20][11];//matrix with parsed keycodes for current key
-			long behavior;//long that hold behavior of current key
-			char behavior_str[11];//behavior string parsed from mapping
-			behavior_str[10]='\0';//sets last character to null, so it's a string
-			for(int i=0; i<10; i++) //copies behavior 10 characters into a behavior int
-			{
-				behavior_str[i]=keycode_str[i];
-			}
-			sscanf(behavior_str, "%lx", &behavior); //sscanf behavior str to get its num value
-			cout << behavior << "behavior\n";
-			
-
-			keycode_str = keycode_str+10; //moves pointer of keycode to the next block of 10 characters
-			
-			int keycodes_len=strlen(keycode_str);//num of characters in the string 
-			cout << keycodes_len << "keycode len \n";
-			cout << keycode_str << '\n';
-
-			if(behavior==normal)//early termination for normal key
-			{
-				matrix[current_key].data[current_layer].behavior=normal;
-				long normal_keycode;
-				sscanf(keycode_str, "%lx", &normal_keycode);
-				matrix[current_key].data[current_layer].keycode=normal_keycode;
-			}
-			
-			else if(behavior==clear) //early termination for clear key
-			{
-				matrix[current_key].data[current_layer].behavior=clear;
-				matrix[current_key].data[current_layer].keycode=0;
-			}
-			
-			else
-			{
-				//parses rest of the mapping string. writes each 10 character block into a different string for sscanf usage
-				for(int i=0; i<keycodes_len/10; i++)
-				{
-					for(int j=0; j<10; j++)
-					{
-						keycodes[i][j]=keycode_str[i*10+j];
-					}
-					keycodes[i][10]='\0';
-					cout << keycodes[i] << '\n';
-				}
-				
-				switch(behavior)//dynamically allocate structs if needed
-				{
-					case hold:
-					hold_data *hold_keycode;
-					hold_keycode = (hold_data *) malloc (sizeof(hold_data));
-					sscanf(keycodes[0], "%lx", &hold_keycode->tap);
-					sscanf(keycodes[1], "%lx", &hold_keycode->hold);
-					matrix[current_key].data[current_layer].keycode= (long) hold_keycode;
-					break;
-			
-					case doubletap:
-					doubletap_data *doubletap_keycode;
-					doubletap_keycode = (doubletap_data *) malloc(sizeof(doubletap_data));
-					sscanf(keycodes[0], "%lx", &doubletap_keycode->tap);
-					sscanf(keycodes[0], "%lx", &doubletap_keycode->doubletap);
-					matrix[current_key].data[current_layer].keycode= (long) doubletap_keycode;
-					break;
-			
-					case dtaphold:
-					dtaphold_data *dtaphold_keycode;
-					dtaphold_keycode = (dtaphold_data *) malloc(sizeof(dtaphold_data));
-					sscanf(keycodes[0], "%lx", &dtaphold_keycode->tap);
-					sscanf(keycodes[0], "%lx", &dtaphold_keycode->doubletap);
-					sscanf(keycodes[0], "%lx", &dtaphold_keycode->hold);
-					cout << dtaphold_keycode->doubletap;				
-					matrix[current_key].data[current_layer].keycode= (long) dtaphold_keycode;
-					break;
-				}
-			}
-
-}

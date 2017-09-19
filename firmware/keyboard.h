@@ -3,8 +3,6 @@
 
 typedef enum {normal, hold, doubletap, clear, dtaphold, macro, dead} key_behavior; //possible behaviors of a key
 
-
-
 typedef struct
 {
 	long tap;
@@ -49,8 +47,8 @@ typedef struct
 	contains state variables and an array of type key_data
 	the array carries the data/behavior of the key for each layer defined by the user */
 
-	int state; // state of the key (1/0) from the time the matrix was scanned
-    int important; //ON/OFF is not enough to track a key, this allows the code to decide whether this key requires attention or not
+	uint8_t state; // state of the key (1/0) from the time the matrix was scanned
+    uint8_t important; //ON/OFF is not enough to track a key, this allows the code to decide whether this key requires attention or not
 
 	/* buffer_value has value of -1 if the key is not on the buffer/is not being used for layer
 	otherwise it follows a similar format to the keycode variable: 0xTTLLMMBB
@@ -63,9 +61,8 @@ typedef struct
 } key;
 
 extern key matrix[];
-extern char *mapping[NUM_LAYERS][NUM_KEYS];
-extern int row_pins[];
-extern int col_pins[];
+extern uint8_t row_pins[];
+extern uint8_t col_pins[];
 
 //Loop functions
 void matrix_scan();//performs the scan of the matrix and writes 1/0 to each key
