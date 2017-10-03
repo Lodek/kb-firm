@@ -60,9 +60,7 @@ typedef struct
   
 } key;
 
-extern key matrix[];
-extern uint8_t row_pins[];
-extern uint8_t col_pins[];
+
 
 //Loop functions
 void matrix_scan();//performs the scan of the matrix and writes 1/0 to each key
@@ -85,3 +83,7 @@ void remove_from_buffer(key* current_key);//receives a key object, uses buffer_v
 void flush();//erases the out buffer
 void layervar_translator(); //function that returns the index for the corresponding VALUE of a layer.
 void get_status(key *current_key);//Performs digitalRead for the current key
+
+extern uint8_t row_pins[NUM_ROW];
+extern uint8_t col_pins[NUM_COLL];
+extern key matrix[];

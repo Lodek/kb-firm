@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import sys
 
 with open(sys.argv[1], 'r') as layer_file:
@@ -9,13 +10,14 @@ with open(sys.argv[2], 'r') as lines_file:
 lines_file.close()
 
 transpose =  [number.strip('\n') for number in transpose]
+keycodes = [key.strip('\n') for key in keycodes]
 
 new = []
 for number in transpose:
-	if int(number) == 0:
-		new.append('0x000000000x00000000')
+	if number == '0':
+		new.append('\\0')
 	else:
-		new.append(keycodes[int(number-1)])
+		new.append(keycodes[int(number)-1])
 
 for keycode in new:
 	print (keycode)

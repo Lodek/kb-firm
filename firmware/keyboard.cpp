@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include <Arduino.h>
 #include "start.h"
 
 key matrix[NUM_KEYS]; //data structure with an array of key objects
@@ -18,14 +19,9 @@ uint8_t col_pins[NUM_COLL] = {COL_PINS};
 
 void start()
 {
-	start_serial();
 	start_gpio();
 	start_keys();
-	start_l0();
-	start_l1();
-//	start_l2();
-//	start_mapping();
-//    matrix[0].data[1].keycode=0x00000004;
+	start_mapping();
 	return;
 }
 
