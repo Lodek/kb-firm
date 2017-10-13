@@ -1,29 +1,28 @@
 #include "keyboard.h"
 #include <Arduino.h>
-#include "start.h"
+#include <avr/pgmspace.h>
+#include "mappings.h"
 
-key matrix[NUM_KEYS]; //data structure with an array of key objects
-uint8_t layers[NUM_LAYERS] = {LAYER_VALUE}; //array that makes the matching of index number of layer with the value utilized by layer var
+uint8_t index;//int used to iterate through matrix
+long key_code;// long that stores the keythat is going to be written
+
+//const long  l0[NUM_KEYS] PROGMEM = {L0} ;
+//const long  l1[NUM_KEYS] PROGMEM = {L1} ;
+//const long  l2[NUM_KEYS] PROGMEM = {L2} ;
+L0
+L1
+L2
+L5
+L10
+const long* const maps[NUM_LAYERS] PROGMEM = {MAP} ;
+
+//array that makes the matching of index number of layer with the value utilized by layer var
+const uint8_t layers[NUM_LAYERS] = {LAYER_VALUE}; 
 
 uint8_t layervar = 0; //int that stores which layer is being used
 uint8_t translated_layervar=0; //layervar after going through translated function. Used as index for key.data[translated_layervar] calls
 
-uint8_t index;//int used to iterate through matrix
-
 uint8_t out_buffer[8] = {0}; //buffer to output USB data
-
-//physical pin number for each row and collunm
-uint8_t row_pins[NUM_ROW] = {ROW_PINS};
-uint8_t col_pins[NUM_COLL] = {COL_PINS};
-
-
-void start()
-{
-	start_gpio();
-	start_keys();
-	start_mapping();
-	return;
-}
 
 
 // Loop functions
@@ -91,7 +90,8 @@ void write_buffer()
 void normal_behavior (key *current_key)
 {
 	// Simple handler for a normal key. If key is pressed add it to buffer
-	add_to_buffer(current_key, current_key->data[translated_layervar].keycode); //calls add to buffer and writes the return to buffer_value variable
+	key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+(current_key->data[translated_layervar].index*4));
+	add_to_buffer(current_key, key_code); //calls add to buffer and writes the return to buffer_value variable
 
     return;
 }
@@ -104,25 +104,32 @@ void hold_behavior(key* current_key)
 	sleep the MCU for HOLD SLEEP ms
 	checks, if key still pressed, add to buffer using the hold keycode
 	else uses the tap keycode */
-  	hold_data *data = (hold_data *) current_key->data[translated_layervar].keycode;
+
 
 	delay(HOLD_SLEEP);
 	get_status(current_key);
-	if(current_key->state == 0) add_to_buffer(current_key, data->tap); 
-	else if(current_key->state==1) add_to_buffer(current_key, data->hold);
+	if(current_key->state == 0)
+	{
+		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+(current_key->data[translated_layervar].index*4));
+		add_to_buffer(current_key, key_code); 
+	}
+	else if(current_key->state==1)
+	{
+		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
+	    add_to_buffer(current_key, key_code);
+	}
 	return;
 }
 
 
 void doubletap_behavior(key *current_key)
 {
-	doubletap_data *data = (doubletap_data *) current_key->data[translated_layervar].keycode;
-	
 	delay(DOUBLETAP_RELEASE_DELAY);
 	get_status(current_key);
 	if(current_key->state == 1)
 	{
-		add_to_buffer(current_key, data->tap);
+		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
+	    add_to_buffer(current_key, key_code);
 		return;
 	}
 	else 
@@ -131,12 +138,14 @@ void doubletap_behavior(key *current_key)
 		get_status(current_key);
 		if(current_key->state == 0)
 		{
-			add_to_buffer(current_key, data->tap);
+			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
+		    add_to_buffer(current_key, key_code);
 			return;
 		}
 		else
 		{
-			add_to_buffer(current_key, data->doubletap);
+			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
+		    add_to_buffer(current_key, key_code);
 			return; 
 		}
 	}
@@ -145,20 +154,20 @@ void doubletap_behavior(key *current_key)
 
 void clear_behavior(key *current_key)
 {
-	long data = current_key->data[0].keycode;
-	add_to_buffer(current_key, data);
+	key_code = pgm_read_dword_near((pgm_read_word_near(&maps[0]))+((current_key->data[0].index)*4));
+	add_to_buffer(current_key, key_code);
 }
 
 
 void dtaphold_behavior(key *current_key)
 {
-	dtaphold_data *data = (dtaphold_data *) current_key->data[translated_layervar].keycode;
 
 	delay(DTAPHOLD_RELEASE_DELAY);
 	get_status(current_key);
 	if(current_key->state == 1)
 	{
-		add_to_buffer(current_key, data->hold);
+		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+2)*4));
+	    add_to_buffer(current_key, key_code);
 		return;
 	}
 	else 
@@ -167,12 +176,14 @@ void dtaphold_behavior(key *current_key)
 		get_status(current_key);
 		if(current_key->state == 0)
 		{
-			add_to_buffer(current_key, data->tap);
+			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
+		    add_to_buffer(current_key, key_code);
 			return;
 		}
 		else
 		{
-			add_to_buffer(current_key, data->doubletap);
+			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
+		    add_to_buffer(current_key, key_code);
 			return; 
 		}
 	}	

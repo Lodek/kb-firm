@@ -2,8 +2,8 @@
 #define NUM_ROW 4
 #define NUM_PINS NUM_ROW+NUM_COLL
 #define NUM_KEYS NUM_COLL*NUM_ROW
-#define NUM_LAYERS 3
-#define LAYER_VALUE 0,1,2
+#define NUM_LAYERS 5
+#define LAYER_VALUE 0,1,2,5,10
 
 #define HOLD_SLEEP 150
 

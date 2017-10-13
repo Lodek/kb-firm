@@ -11,7 +11,7 @@ o
 p
 BACKSPC
 BACKSPC
-ESC
+// n-h ESC ALT
 a
 s
 d
@@ -35,16 +35,16 @@ m
 ,
 .
 /
-CTRL
+SHIFT
 ENTER
-CTRL
+L10
 GUI
 ALT
 \0
-\0
+L1
 SPC
 SPC
-\0
+L2
 \0
 \0
 \0
