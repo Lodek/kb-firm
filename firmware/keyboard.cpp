@@ -248,8 +248,8 @@ void remove_from_buffer(key *current_key)
 		return;
 	}
     out_buffer[(current_key->buffer_value & 0x000000FF)] = 0; //a
-	out_buffer[0] = out_buffer[0] ^ ((current_key->buffer_value >> 8) & 0x000000FF);//b
-    layervar = ((current_key->buffer_value >> 16) &0x000000FF)^layervar;//c
+	out_buffer[0] = out_buffer[0] & ~((current_key->buffer_value >> 8) & 0x000000FF);//b
+    layervar = ~((current_key->buffer_value >> 16) &0x000000FF) & layervar;//c
 
 	current_key->buffer_value=-1;
 	current_key->important=0;
