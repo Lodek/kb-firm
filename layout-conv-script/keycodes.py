@@ -135,5 +135,9 @@ hid_keys ={
     '\\0' : 0,
     'iso_tilde' : 50,
     'grave' : 53,
-    'iso_\\' : 100
+    'iso_\\' : 100,
+    'RCTRL' : 4096,
+    'RSHIFT' : 8192,
+    'RALT' : 16384,
+    'RGUI' : 32768,
 }
