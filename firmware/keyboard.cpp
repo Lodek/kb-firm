@@ -24,6 +24,8 @@ uint8_t translated_layervar=0; //layervar after going through translated functio
 
 uint8_t out_buffer[8] = {0}; //buffer to output USB data
 
+char hash[1+NUM_KEYS/8] = 0;
+char old_hash[1+NUM_KEYS/8] = 0;
 
 // Loop functions
 void matrix_scan()
@@ -35,8 +37,18 @@ void matrix_scan()
 	repeats for next row */
     for (uint8_t i = 0; i < NUM_ROW; i++)
     {
+        char *temp = hash;
+        hash = old_hash;
+        old_hash = temp;
+        
         digitalWrite(row_pins[i], HIGH);
-		for (uint8_t j = 0; j < NUM_COLL; j++)  matrix[i*NUM_COLL+j].state = digitalRead(col_pins[j]);
+		for (uint8_t j = 0; j < NUM_COLL; j++)
+        {
+            int index = i*NUM_COLL+j;
+            matrix[i*NUM_COLL+j].state = digitalRead(col_pins[j]);
+            hash[index/8] &= ~(1 << index%8)
+            hash[index/8] |= (1 << index%8)
+        }  
 		digitalWrite(row_pins[i], LOW);
     }
     return;
@@ -90,9 +102,8 @@ void write_buffer()
 void normal_behavior (key *current_key)
 {
 	// Simple handler for a normal key. If key is pressed add it to buffer
-	key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+(current_key->data[translated_layervar].index*4));
-	add_to_buffer(current_key, key_code); //calls add to buffer and writes the return to buffer_value variable
-
+	keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+(current_key->data[translated_layervar].index*4));
+	add_to_buffer(current_key, keycode); //calls add to buffer and writes the return to buffer_value variable
     return;
 }
 
@@ -104,89 +115,130 @@ void hold_behavior(key* current_key)
 	sleep the MCU for HOLD SLEEP ms
 	checks, if key still pressed, add to buffer using the hold keycode
 	else uses the tap keycode */
-
-
-	delay(HOLD_SLEEP);
-	get_status(current_key);
-	if(current_key->state == 0)
-	{
-		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+(current_key->data[translated_layervar].index*4));
-		add_to_buffer(current_key, key_code); 
-	}
-	else if(current_key->state==1)
-	{
-		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
-	    add_to_buffer(current_key, key_code);
-	}
-	return;
+    long hold_keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
+    long tap_keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+(current_key->data[translated_layervar].index*4));
+    
+    for(long i=0; i<HOLD_THRESHOLD; i++)
+    {
+        matrix_scan();
+		//get_status(current_key);
+		if(compare_hashes() == 0 && current_key->state == 1)
+        {
+            add_to_buffer(current_key, hold_keycode);
+            return;
+        }
+        else if(current_key->state == 0)
+        {
+            add_to_buffer(current_key, tap_keycode);
+            return;
+        }
+    }
+    add_to_buffer(current_key, hold_keycode);
+    return;
 }
 
 
 void doubletap_behavior(key *current_key)
 {
-	delay(DOUBLETAP_RELEASE_DELAY);
-	get_status(current_key);
-	if(current_key->state == 1)
-	{
-		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
-	    add_to_buffer(current_key, key_code);
-		return;
-	}
-	else 
-	{
-		delay(DOUBLETAP_TAP_DELAY);
-		get_status(current_key);
-		if(current_key->state == 0)
-		{
-			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
-		    add_to_buffer(current_key, key_code);
-			return;
-		}
-		else
-		{
-			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
-		    add_to_buffer(current_key, key_code);
-			return; 
-		}
-	}
+    int hash_diff;
+    long i;
+    long tap_keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
+    long double_tap_keycode =  pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
+    //initial for, if key gets released before threshold it might be tapped again, else it was held down the entire time
+    for(i=0; i<DOUBLE_TAP_RELEASE_THRESHOLD; i++)
+    {
+        matrix_scan();
+        hash_diff = compare_hashes()
+        if(hash_diff == 0 && current_key->state == 1)
+        {
+            add_to_buffer(current_key, tap_keycode);
+            return;
+        }
+        else if(current_key->state == 0) break;
+    }
+
+    if(i==DOUBLE_TAP_RELEASE_THRESHOLD)
+    {
+        add_to_buffer(current_key, tap_keycode);
+        return;
+    }
+    
+    for(i=0; i<DOUBLE_TAP_RETAP_THRESHOLD; i++)
+    {
+        matrix_scan();
+        hash_diff = compare_hashes()
+        if(current_key->state == 1)
+        {
+            add_to_buffer(current_key, double_tap_keycode);
+            return; 
+        }
+        else if(hash_diff == 0 && current_key->state == 0)
+        {
+            add_to_buffer(current_key, tap_keycode);
+            return;
+        }
+    }
+    add_to_buffer(current_key, tap_keycode);
+    return;
 }
 
 
 void clear_behavior(key *current_key)
 {
-	key_code = pgm_read_dword_near((pgm_read_word_near(&maps[0]))+((current_key->data[0].index)*4));
-	add_to_buffer(current_key, key_code);
+	keycode = pgm_read_dword_near((pgm_read_word_near(&maps[0]))+((current_key->data[0].index)*4));
+	add_to_buffer(current_key, keycode);
 }
 
 
 void dtaphold_behavior(key *current_key)
 {
+    int hash_diff;
+    long i;
+    long tap_keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
+    long double_tap_keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
+    long hold_keycode = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+2)*4));
+    
+    // initial scan for a release
 
-	delay(DTAPHOLD_RELEASE_DELAY);
-	get_status(current_key);
-	if(current_key->state == 1)
-	{
-		key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+2)*4));
-	    add_to_buffer(current_key, key_code);
-		return;
-	}
-	else 
-	{
-		delay(DTAPHOLD_TAP_DELAY);
-		get_status(current_key);
-		if(current_key->state == 0)
-		{
-			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index)*4));
-		    add_to_buffer(current_key, key_code);
-			return;
-		}
-		else
-		{
-			key_code = pgm_read_dword_near((pgm_read_word_near(&maps[translated_layervar]))+((current_key->data[translated_layervar].index+1)*4));
-		    add_to_buffer(current_key, key_code);
-			return; 
-		}
-	}	
+    for(i=0; i<DTH_HOLD_THRESHOLD; i++)
+    {
+        matrix_scan();
+        hash_diff = compare_hashes();
+        if(hash_diff == 0 && current_key->state == 1)
+        {
+            add_to_buffer(current_key, hold_keycode);
+            return;
+        }
+        else if(current_key->state == 0)
+        {
+            break;
+        }
+    }
+    
+    if(i==DTH_HOLD_THRESHOLD)
+    {
+        add_to_buffer(current_key, hold_keycode);
+        return;
+    }
+
+    for(i=0; i<DTH_RETAP_THRESHOLD; i++)
+    {
+        matrix_scan();
+        hash_diff = compare_hashes();
+        if(current_key->state == 1)
+        {
+            add_to_buffer(current_key, double_tap_keycode);
+            return;
+        }
+        else if(hash_diff == 0 && current_key->state == 0)
+        {
+            add_to_buffer(current_key, tap_keycode);
+            return;
+        }
+    }
+
+    add_to_buffer(current_key, tap_keycode);
+    return;
 }
 
 
@@ -280,4 +332,14 @@ void get_status(key *current_key)
 	current_key->state = digitalRead(col_pins[index % NUM_COLL]);
 	digitalWrite(row_pins[index / NUM_COLL], LOW);
 	return;
+}
+
+int compare_hashes()
+{
+    //return 1 if equal else 0
+    for(int i=0; i<1+NUM_KEYS/8; i++)
+    {
+        if(old_hash[i] != hash[i]) return 0;
+    }
+    return 1;
 }
