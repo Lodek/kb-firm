@@ -1,18 +1,14 @@
-#define NUM_COLL 13
-#define NUM_ROW 4
-#define NUM_PINS NUM_ROW+NUM_COLL
-#define NUM_KEYS NUM_COLL*NUM_ROW
-#define NUM_LAYERS 5
-#define LAYER_VALUE 0,1,2,5,10
+#define NUM_OUTPUTS 13
+#define NUM_INPUTS 4
+#define NUM_PINS NUM_OUTPUTS+NUM_INPUTS
+#define KEYS_LEN NUM_OUTPUTS*NUM_INPUTS
+#define LAYERS_LEN 5
+#define LAYER_VALUES 0,1,2,5,10
+#define DATA_LEN 3
 
-#define HOLD_SLEEP 150
-
-#define DOUBLETAP_TAP_DELAY  100
-#define DOUBLETAP_RELEASE_DELAY 100
-
-#define DTAPHOLD_RELEASE_DELAY 100
-#define DTAPHOLD_TAP_DELAY  100
+#define HOLD_DELAY 150
+#define RETAP_DELAY 150
 
 //csv notation
-#define ROW_PINS 1,2,3,4
-#define COL_PINS 21, 20, 19, 18, 15, 14, 16, 10, 9, 8, 7, 6, 5
+#define INPUT_PINS 1,2,3,4
+#define OUTPUT_PINS 21, 20, 19, 18, 15, 14, 16, 10, 9, 8, 7, 6, 5
