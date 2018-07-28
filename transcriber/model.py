@@ -1,4 +1,4 @@
-from map_errors import LineError
+from map_errors import LineError, DataFileError
 from librarian import Librarian
 from pathlib import Path
 import re
@@ -6,6 +6,46 @@ import re
 lib = Librarian()
 c_wrapper = lambda s : '{{{}}}'.format(s)
 
+class Definer:
+
+    def __init__(self, layers, macros):
+        self.macros = macros
+        self.layers = layers
+        self.check_layers_len()
+        self.keys_len = len(self.layers[0])
+        self.layers_len = len(self.layers)
+        self.macros_len = len(self.macros)
+        self.layers_value = ','.join([str(layer.id) for layer in self.layers])
+
+    def check_layers_len(self):
+        """Checks that all layer files had the same original length. 
+        If lens are different, layer map file is wrong"""
+        lens = [layer.file_len for layer in self.layers]
+        sample = lens[0]
+        for l in lens:
+            if sample != l:
+                raise DataFileError
+
+    def define_all(self):
+        defines = []
+        defines.append(self.define('KEYS_LEN', self.keys_len))
+        defines.append(self.define('LAYERS_LEN', self.layers_len))
+        defines.append(self.define('MACROS_LEN', self.macros_len))
+        defines.append(self.define('NAMES', self.names()))
+        defines.append(self.define('MACROS', self.macros_def()))
+        defines.append(self.define('LAYERS_VAL', self.layers_value))
+
+        for define in defines:
+            print(define +'\n')
+        
+    def names(self):
+        return c_wrapper(','.join([str(layer) for layer in self.layers]))
+
+    def macros_def(self):
+        return c_wrapper(','.join([macro.flat_quantas() for macro in self.macros]))
+
+    def define(self, who, what):
+        return '#define {} {}'.format(who, what)
 
 class Transpose:
 
@@ -32,6 +72,7 @@ class DataFile:
     def __init__(self, path, transpose = None):
         self.path = path
         self.names = list(self.names_gen())
+        self.file_len = len(self.names)
         self.id = int(path.name[1:])
         if transpose:
             self.names = transpose.transpose(self.names)
@@ -48,8 +89,8 @@ class DataFile:
                     yield l
 
     def flat_quantas(self):
-        quantas = [q for name in self.names for q in name.quantas]
-        return c_wraper(','.join(quantas))
+        quantas = [str(q) for name in self.names for q in name.quantas]
+        return c_wrapper(','.join(quantas))
 
     def __str__(self):
         return c_wrapper(','.join([str(name) for name in self.names]))

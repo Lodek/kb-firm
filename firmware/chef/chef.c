@@ -1,16 +1,14 @@
 /*
 Decision making module for firmware. Receives current state of keys, processes the information and generates the USB report for that cycle.
 Built as a module so it can be used in a wrapper program that tests its functionalities.
-Wrapper program MUST implement "update_keys", "get_trigger" and "get_quanta" functions.
-*/
-#include "keyboard.h"
-#include "mappings.h"
+Wrapper/main program MUST implement "update_keys", "get_trigger" and "get_quanta" functions.
 
 Key keys[KEYS_LEN] = {0};
 Name names[NUM_LAYERS][KEYS_LEN] = NAMES_INIT;
 long macros[NUM_MACROS][] = MACROS_INIT;
+*/
 
-const uint8_t layers[LAYERS_LEN] = {LAYER_VALUE};
+#include "chef.h"
 
 uint8_t layer = 0; //int that stores which layer is being used
 uint8_t layer_value = 0; //variable with numerical value for layer

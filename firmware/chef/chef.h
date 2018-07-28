@@ -42,3 +42,5 @@ uint8_t get_index(Key* key);
 void layer_mapper();
 void gen_hash(Key** keys);
 uint8_t hash_diff();
+
+extern uint8_t layers[];

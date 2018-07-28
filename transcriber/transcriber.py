@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from pathlib import Path
 from librarian import Librarian
-from model import Quanta, DataFile, Transpose
+from model import Quanta, DataFile, Transpose, Definer
 import argparse, logging, re
 
 def parse_args():
@@ -18,11 +18,9 @@ def main():
     macros = [DataFile(p) for p in root_p.iterdir() if re.search('[mM]\d+', p.name)]
     Quanta.lib.update_macros(macros)
     layers = [DataFile(p, transpose) for p in root_p.iterdir() if re.search('[lL]\d+', p.name)]
+    definer = Definer(layers, macros)
+    definer.define_all()
 
-    names = '{' + ','.join([str(layer) for layer in layers]) + '}'
-    print(names)
-    for macro in macros:
-        print(macro.flat_quantas())
     
 if __name__ == '__main__':
     main()
