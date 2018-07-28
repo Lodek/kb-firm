@@ -1,11 +1,9 @@
 #include "defines.h"
 
-//Defines the meaning of the 4th byte of the keycode
-//the key will be handled according to its type
-typedef enum {normal, toggle, macro, dead, absolute} keycode_type;
+//Defines the meaning for quanta's 4th byte
+typedef enum {normal, toggle, macro, dead, absolute} quanta_type;
 
 //Possible triggers for a physical key switch.
-// this data is used to proccess a key presses
 typedef enum {normal, hold, doubletap, dth} key_triggers;
 
 typedef struct {
@@ -15,18 +13,20 @@ typedef struct {
     //toggled -> aux bit to handle toggles
     uint8_t active, handled, remove, toggled;
     uint8_t written_mod, written_layer, report_index;
-    //Keys are complicated beings, they have various names
-    //one name for each layer. Each name contains bits of its existence
-    //such as what triggers that key on that layer and the payload
-	key_name names[NUM_LAYERS];
+    uint8_t index, trigger;
+    //Conceptually, Key should have a Name for each layer.
+    //Due to hardware limitations however (ie runtime SRAM), Names were moved to ROM,
+    //thus it was separated from Key since Key contains state variables.
+    //It is helpful to think of Key as containing Names.
 } Key;
 
 typedef struct {
-    //Keys have as many names as there are layers, we can only call one name at a time
-    //their name tells us its trigger and their homes
-    key_triggers trigger; //activation modes for key
-    uint8_t index; //index of the key in the array with keycodes
-} key_name;
+    //Keys are complicated beings, they have various names, each of which contains bits of its existence.
+    //Each name defines what that key does in that layer.
+    //Name contains that key's Quantas and triggers for that layer.
+    const key_triggers trigger;
+    const long quantas[];
+} Name;
 
 uint8_t* generate_report(Key** keys);
 void key_handler(Key* key);
