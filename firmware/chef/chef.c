@@ -9,19 +9,25 @@ long macros[NUM_MACROS][] = MACROS_INIT;
 */
 
 #include "chef.h"
+#include "scan.h"
+#include "defines.h"
+#include "maps.h"
 
-uint8_t layer = 0; //int that stores which layer is being used
-uint8_t layer_value = 0; //variable with numerical value for layer
-uint8_t report[8] = {0};
-uint8_t key_index;
+_byteint layer = 0; //int that stores which layer is being used
+_byteint layer_value = 0; //variable with numerical value for layer
+_byteint report[8] = {0};
+_byteint h1[100] = {0};
+_byteint h2[100] = {0};
+_byteint key_index;
+_byteint *hash = h1;
+_byteint *old_hash = h2;
+_byteint layers[LAYERS_LEN] = {LAYERS_VAL};
 
-char hash[KEYS_LEN] = 0;
-char old_hash[KEYS_LEN] = 0;
 
-uint8_t* generate_report(Key** keys){
+_byteint* generate_report(){
     layer_mapper();
     gen_hash();
-    for(key_index = 0; index < KEYS_LEN; key_index++){
+    for(key_index = 0; key_index < KEYS_LEN; key_index++){
         key_handler(&keys[key_index]);
     }
     return report;
@@ -31,13 +37,13 @@ void key_handler(Key* key){
     //Identify which Key needs attention and calls the correct handler.
     if(key->active && !key->handled){
         key_triggers trigger = get_trigger(key_index, layer);
-        if(trigger == normal) trigger_normal(key);
+        if(trigger == common) trigger_common(key);
         else if(trigger == hold) trigger_hold(key);
-        else if(trigger == doubletap) trigger_doubletap(key);
+        else if(trigger == doubletap) trigger_dtap(key);
         else if(trigger == dth) trigger_dth(key);
     }
-    else if(!key->status && key->remove){
-        uint8_t result = report_pop(key);
+    else if(!key->active && key->remove){
+        _byteint result = report_pop(key);
         if(result) key->toggled = 0;
         else{
             key->remove = 0;
@@ -47,7 +53,7 @@ void key_handler(Key* key){
 }
 
 //Trigger handling functions
-void trigger_normal(Key* key){
+void trigger_common(Key* key){
     long quanta = get_quanta(key_index, layer, 0);
     quanta_handler(key, quanta);
 }
@@ -76,7 +82,7 @@ void trigger_hold(Key* key){
 void trigger_dtap(Key* key){
     long tap_quanta = get_quanta(key_index, layer, 0);
     long dtap_quanta = get_quanta(key_index, layer, 1);
-    base_tripple_trigger(key, tap_quanta, dtap_quanta, tap_quanta);
+    base_triple_trigger(key, tap_quanta, dtap_quanta, tap_quanta);
     return;
 }
 
@@ -85,7 +91,7 @@ void trigger_dth(Key* key){
     long tap_quanta = get_quanta(key_index, layer, 0);
     long dtap_quanta = get_quanta(key_index, layer, 1);
     long hold_quanta = get_quanta(key_index, layer, 2);
-    base_tripple_trigger(key, tap_quanta, dtap_quanta, hold_quanta);
+    base_triple_trigger(key, tap_quanta, dtap_quanta, hold_quanta);
 }
 
 
@@ -131,13 +137,13 @@ void base_triple_trigger(Key* key, long tap_quanta, long dtap_quanta, long hold_
 void quanta_handler(Key* key, long quanta){
     //Handles the different types of quantas (eg toggle, normal, macro),
     //adds key to report and, if successful, updates Key's state variables.
-    uint8_t type, layer, mod, keycode;
+    _byteint type, layer, mod, keycode;
     type = quanta >> 32;
     layer = quanta >> 16;
     mod = quanta >> 8;
     keycode = quanta;
     if(type == toggle || type == normal){
-        uint8_t report_index = report_append(key, layer, mod, keycode);
+        _byteint report_index = report_append(key, layer, mod, keycode);
         if(report_index == -1) return;
         key->handled = 1;
         key->remove = 1;
@@ -151,7 +157,7 @@ void quanta_handler(Key* key, long quanta){
     }
 }
 
-uint8_t report_append(Key* key, uint8_t layer, uint8_t mod, uint8_t keycode){
+_byteint report_append(Key* key, _byteint layer, _byteint mod, _byteint keycode){
     //Given the quanta, appends it to the repport.
     //Returns the index of the written keycode on the buffer
     //if report is full, returns -1 and nothing is done
@@ -160,7 +166,7 @@ uint8_t report_append(Key* key, uint8_t layer, uint8_t mod, uint8_t keycode){
     int index;
     if(!keycode) index = 1;
     else{
-        for(index = 2; i < 8; i++){
+        for(index = 2; index < 8; index++){
             if(!report[index]){
                 report[index] = keycode;
                 break;
@@ -173,7 +179,7 @@ uint8_t report_append(Key* key, uint8_t layer, uint8_t mod, uint8_t keycode){
     return index;
 }
 
-uint8_t report_pop(Key* key){
+_byteint report_pop(Key* key){
     //Given a key where remove is True, removes it from report and returns 0
     //if key toggled is True, returns 1 indicating that toggled should be reset
     if(key->toggled){
@@ -190,20 +196,20 @@ uint8_t report_pop(Key* key){
 
 void layer_mapper(){
     //maps the value of a layer to its index in layers
-    for(uint8_t i = 0; i < NUM_LAYERS ; i++) if (layers[i] == layer_value) layer=i;
+    for(_byteint i = 0; i < LAYERS_LEN ; i++) if (layers[i] == layer_value) layer=i;
 }
 
-void gen_hash(Key** keys){
+void gen_hash(){
     //updates the hash array for the current state of keys
-    char* temp = old_hash;
+    _byteint *tmp = old_hash;
     old_hash = hash;
-    hash = temp;
-    for(int i = 0; i < KEYS_LENGTH; i++) hash[i] = keys[i]->active;
+    hash = tmp;
+    for(int i = 0; i < KEYS_LEN; i++) hash[i] = keys[i].active;
 }
 
-uint8_t hash_diff(){
+_byteint hash_diff(){
     //returns true if hashes are different else false
-    for(int i=0; i<1+NUM_KEYS/8; i++){
+    for(int i=0; i < KEYS_LEN; i++){
         if(old_hash[i] != hash[i]) return 1;
     }
     return 0;

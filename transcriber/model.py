@@ -124,7 +124,7 @@ class Name:
         line = self.txt.split(' ')
         if len(line) == 1:
             self.quantas.append(Quanta(line[0]))
-            self.trigger = lib.trigger('normal')
+            self.trigger = lib.trigger('common')
         else:
             trigger = line[1]
             self.trigger = lib.trigger(trigger)

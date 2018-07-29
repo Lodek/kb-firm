@@ -1,27 +1,18 @@
+#include <Arduino.h>
+#include "chef.h"
 #include "defines.h"
-#include "keyboard.h"
-#include "start.h"
-
-//Global variables
-
-key matrix[NUM_KEYS]; //data structure with an array of key objects
-
-//physical pin number for each row and collunm
-uint8_t row_pins[NUM_ROW] = {ROW_PINS};
-uint8_t col_pins[NUM_COLL] = {COL_PINS};
+#include "maps.h"
+#include "scan.h"
 
 
-void setup() 
-{
-//	start_serial();
-	start_gpio();
-	start_keys();
+void setup(){
+    init_gpio();
 }
 
-void loop() 
-{
-    matrix_scan();
-    matrix_iterator();
-    write_buffer();
+void loop(){
+    _byteint *report;
+    update_keys();
+    report = generate_report();
+    send_report(report);
 }
 

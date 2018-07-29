@@ -39,8 +39,8 @@ class Librarian:
         self.macros_dict = d
 
 
-triggers = {'normal' : 0, 'hold' : 1, 'doubletap' : 2, 'dth' : 3}
-triggers_len = {'normal' : 1, 'hold' : 2, 'doubletap' : 2, 'dth' : 3}
+triggers = {'common' : 0, 'hold' : 1, 'doubletap' : 2, 'dth' : 3}
+triggers_len = {'common' : 1, 'hold' : 2, 'doubletap' : 2, 'dth' : 3}
 quanta_types = {'normal' : 0, 'toggle' : 1, 'macro' : 2, 'dead' : 3, 'absolute' : 4}
 mods_dict = {'c' : 0x01, 's': 0x02, 'a':0x04, 'g':0x08}
 hid_keycodes = {
