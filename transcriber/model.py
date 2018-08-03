@@ -32,6 +32,7 @@ class Definer:
         defines.append(self.define('LAYERS_LEN', self.layers_len))
         defines.append(self.define('MACROS_LEN', self.macros_len))
         defines.append(self.define('NAMES', self.names()))
+        defines.append(self.define('QUANTAS', self.quantas()))
         defines.append(self.define('MACROS', self.macros_def()))
         defines.append(self.define('LAYERS_VAL', self.layers_value))
 
@@ -40,6 +41,9 @@ class Definer:
         
     def names(self):
         return c_wrapper(','.join([str(layer) for layer in self.layers]))
+
+    def quantas(self):
+        return c_wrapper(','.join([macro.flat_quantas() for macro in self.macros]))
 
     def macros_def(self):
         return c_wrapper(','.join([macro.flat_quantas() for macro in self.macros]))
@@ -74,6 +78,7 @@ class DataFile:
         self.names = list(self.names_gen())
         self.file_len = len(self.names)
         self.id = int(path.name[1:])
+        self.gen_indexes()
         if transpose:
             self.names = transpose.transpose(self.names)
 
@@ -92,6 +97,14 @@ class DataFile:
         quantas = [str(q) for name in self.names for q in name.quantas]
         return c_wrapper(','.join(quantas))
 
+    def gen_indexes(self):
+        indexes = [0]
+        for name in self.names[:-1]:
+            indexes.append(len(name) + indexes[-1])
+            
+        for name, index in zip(self.names, indexes):
+            name.quanta_index = index
+
     def __str__(self):
         return c_wrapper(','.join([str(name) for name in self.names]))
         
@@ -108,6 +121,7 @@ class Name:
         self.txt = line
         self.quantas = []
         self.parse()
+        self.quanta_index = 0
         
     def __repr__(self):
         return self.txt
@@ -116,8 +130,7 @@ class Name:
         return len(self.quantas)
 
     def __str__(self):
-        s = c_wrapper(','.join([str(q) for q in self.quantas]))
-        return '{{{}, {}}}'.format(self.trigger, s)
+        return '{{{}, {}}}'.format(self.trigger, self.quanta_index)
     
     def parse(self):
         """Turns line into a collection of quantas"""
