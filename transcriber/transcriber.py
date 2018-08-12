@@ -16,7 +16,7 @@ def main():
     root_p = Path(args.directory)
     transpose = Transpose(args.tranpose) if args.transpose else None
     macros = [DataFile(p) for p in root_p.iterdir() if re.search('[mM]\d+', p.name)]
-    Quanta.lib.update_macros(macros)
+    Quanta.lib.update_macros(root_p, macros)
     layers = [DataFile(p, transpose) for p in root_p.iterdir() if re.search('[lL]\d+', p.name)]
     definer = Definer(layers, macros)
     definer.define_all()

@@ -31,11 +31,12 @@ class Librarian:
             value = dict[key.lower()]
         return value
 
-    def update_macros(self, macros):
+    def update_macros(self, root_p, macros):
         """Generates the Macro Dict. It relates a macro number with its
         dimmension in the Data matrix"""
+        layers_len = len([p for p in root_p.iterdir() if re.search('[lL]\d+', p.name)])
         MacroInfo = namedtuple('MacroInfo', ['dim', 'len'])
-        d = {macro.id : MacroInfo(i, len(macro)) for i, macro in enumerate(macros)}
+        d = {macro.id : MacroInfo(i+layers_len, len(macro)) for i, macro in enumerate(macros)}
         self.macros_dict = d
 
 

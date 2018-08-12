@@ -15,6 +15,7 @@ class Definer:
         self.keys_len = len(self.layers[0])
         self.layers_len = len(self.layers)
         self.macros_len = len(self.macros)
+        self.quantas_len = self.layers_len + self.macros_len
         self.layers_value = ','.join([str(layer.id) for layer in self.layers])
 
     def check_layers_len(self):
@@ -31,19 +32,27 @@ class Definer:
         defines.append(self.define('KEYS_LEN', self.keys_len))
         defines.append(self.define('LAYERS_LEN', self.layers_len))
         defines.append(self.define('MACROS_LEN', self.macros_len))
-        defines.append(self.define('NAMES', self.names()))
-        defines.append(self.define('QUANTAS', self.quantas()))
-        defines.append(self.define('MACROS', self.macros_def()))
+        defines.append(self.define('QUANTAS_LEN', self.quantas_len))
         defines.append(self.define('LAYERS_VAL', self.layers_value))
+        defines.append(self.define('NAMES', self.names()))
+        dims_def = []
+        dims_dec = []
+        for i, dim in enumerate(self.layers + self.macros):
+            d = 'DIM_{}'.format(i)
+            defines.append(self.define(d, 'uint32_t dim_{}[] PROGMEM = {};'.format(i, dim.flat_quantas())))
+            dims_def.append(d)
+            dims_dec.append(d.lower())
 
+        defines.append(self.define('DIMS', ' '.join(dims_def)))
+        defines.append(self.define('QUANTAS', c_wrapper(','.join(dims_dec))))
         for define in defines:
             print(define +'\n')
         
     def names(self):
         return c_wrapper(','.join([str(layer) for layer in self.layers]))
 
-    def quantas(self):
-        return c_wrapper(','.join([macro.flat_quantas() for macro in self.macros]))
+    def layer_def(self):
+        return c_wrapper(','.join([macro.flat_quantas() for macro in self.layers]))
 
     def macros_def(self):
         return c_wrapper(','.join([macro.flat_quantas() for macro in self.macros]))
