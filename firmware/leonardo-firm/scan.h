@@ -1,8 +1,7 @@
+#include <stdint.h>
+#include "chef.h"
 
-typedef char _byteint;
-
+void update_keys(Key* keys);
 void init_gpio();
-void update_keys();
-void send_report(_byteint *report);
-_byteint get_trigger(_byteint index, _byteint layer);
-long get_quanta(_byteint index, _byteint layer, _byteint offset);
+uint8_t get_trigger(int index, int layer);
+uint32_t get_quanta(int index, int layer, int offset);

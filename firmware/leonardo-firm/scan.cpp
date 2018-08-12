@@ -1,31 +1,28 @@
 #include "scan.h"
 #include "maps.h"
 #include "defines.h"
-#include "chef.h"
 #include <Arduino.h>
-#include <HID.h>
 
-HID_ hid;
+const Name names[LAYERS_LEN][KEYS_LEN] PROGMEM = NAMES;
+DIMS
+uint32_t* quantas[QUANTAS_LEN] = QUANTAS;
 
-Name names[1][8] = NAMES;
-_byteint inputs[INPUTS_LEN] = {INPUT_PINS};
-_byteint outputs[OUTPUTS_LEN] = {OUTPUT_PINS};
-
-Key keys[KEYS_LEN] = {0};
+uint8_t inputs[INPUTS_LEN] = {INPUT_PINS};
+uint8_t outputs[OUTPUTS_LEN] = {OUTPUT_PINS};
 
 void init_gpio(){
-    for (_byteint i = 0; i < OUTPUTS_LEN; i++){
+    for (int i = 0; i < OUTPUTS_LEN; i++){
         pinMode(outputs[i], OUTPUT);
         digitalWrite(outputs[i], LOW);
     }
-    for (_byteint i = 0; i < INPUTS_LEN; i++)
+    for (int i = 0; i < INPUTS_LEN; i++)
         pinMode(inputs[i], INPUT);
 }
 
-void update_keys(){
-    for(_byteint i = 0; i < OUTPUTS_LEN; i++){
+void update_keys(Key* keys){
+    for(int i = 0; i < OUTPUTS_LEN; i++){
         digitalWrite(outputs[i], HIGH);
-        for(_byteint j = 0; j < INPUTS_LEN; j++){
+        for(int j = 0; j < INPUTS_LEN; j++){
             int index = i * INPUTS_LEN +j;
             keys[index].active = digitalRead(inputs[j]);
         }
@@ -33,28 +30,21 @@ void update_keys(){
     }
 }
 
-void send_report(_byteint *report){
-    //Arduino is weird and it "sends" the report.
-    //Uses the generated report and sends it to the host
-    hid.SendReport(2, report, 8);
+
+Name* get_name(int index, int layer){
+    Name name;
+    memcpy_P(&name, &names[layer][index], sizeof(Name));
+    return &name;
 }
 
-_byteint get_trigger(_byteint index, _byteint layer){
-    return names[layer][index].trigger;
-}
-                 
-long get_quanta(_byteint index, _byteint layer, _byteint offset){
-    return names[layer][index].quantas[offset];
-}
-
-                 /*                 
-_byteint get_trigger(_byteint index, _byteint layer){
-    Name name = pgm_read_word_near(names[layer][index]);
+uint8_t get_trigger(int index, int layer){
+    Name name;
+    memcpy_P(&name, &names[layer][index], sizeof(Name));
     return name.trigger;
 }
 
-long get_quanta(_byteint index, _byteint layer, _byteint offset){
-    Name name = pgm_read_word_near(names[layer][index]);
-    return name.quantas[offset];
+uint32_t get_quanta(int index, int layer, int offset){
+    Name name;
+    memcpy_P(&name, &names[layer][index], sizeof(Name));
+    return pgm_read_dword_near((quantas[layer][name.quanta_index]) + 4 * offset);
 }
-                 */

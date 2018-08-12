@@ -39,7 +39,7 @@ class Definer:
         dims_dec = []
         for i, dim in enumerate(self.layers + self.macros):
             d = 'DIM_{}'.format(i)
-            defines.append(self.define(d, 'uint32_t dim_{}[] PROGMEM = {};'.format(i, dim.flat_quantas())))
+            defines.append(self.define(d, 'const uint32_t dim_{}[] PROGMEM = {};'.format(i, dim.flat_quantas())))
             dims_def.append(d)
             dims_dec.append(d.lower())
 
@@ -72,9 +72,9 @@ class Transpose:
         self.transpose_lines = lines
         self.transposer = {int(line) -1 : i for i, line in enumerate(lines)}
         
-    def tranpose(self, lines):
-        el = Line(r'\0')
-        t_lines = [el for _ in range(len(self.transpose_lines))]
+    def transpose(self, lines):
+        el = Name(r'\0')
+        t_lines = [el] * len(self.transpose_lines)
         for i, line in enumerate(lines):
             t_lines[self.transposer[i]] = line
         return t_lines
