@@ -8,6 +8,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Generates data.h for Keyboard module')
     parser.add_argument('directory', help='Directory containing layer and macro files')
     parser.add_argument('-t', '--transpose', help='Tranpose file')
+    parser.add_argument('--noprog', action='store_true', help='Omits PROGMEM in quanta declaration')
     args = parser.parse_args()
     return args
 
@@ -18,7 +19,7 @@ def main():
     macros = sorted([DataFile(p) for p in root_p.iterdir() if re.search('[mM]\d+', p.name)], key=lambda m : m.id)
     Quanta.lib.update_macros(root_p, macros)
     layers = sorted([DataFile(p, transpose) for p in root_p.iterdir() if re.search('[lL]\d+', p.name)], key=lambda m : m.id)
-    definer = Definer(layers, macros)
+    definer = Definer(layers, macros, args.noprog)
     definer.define_all()
 
     

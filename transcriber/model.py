@@ -8,9 +8,10 @@ c_wrapper = lambda s : '{{{}}}'.format(s)
 
 class Definer:
 
-    def __init__(self, layers, macros):
+    def __init__(self, layers, macros, noprog):
         self.macros = macros
         self.layers = layers
+        self.noprog = noprog
         self.check_layers_len()
         self.keys_len = len(self.layers[0])
         self.layers_len = len(self.layers)
@@ -39,10 +40,14 @@ class Definer:
         dims_dec = []
         for i, dim in enumerate(self.layers + self.macros):
             d = 'DIM_{}'.format(i)
-            defines.append(self.define(d, 'const uint32_t dim_{}[] PROGMEM = {};'.format(i, dim.flat_quantas())))
+            declaration = "const uint32_t dim_{}[]".format(i)
+            if not self.noprog:
+               declaration += " PROGMEM"
+            defines.append(self.define(d, '{} = {};'.format(declaration, dim.flat_quantas())))
             dims_def.append(d)
             dims_dec.append(d.lower())
 
+            
         defines.append(self.define('DIMS', ' '.join(dims_def)))
         defines.append(self.define('QUANTAS', c_wrapper(','.join(dims_dec))))
         for define in defines:
@@ -87,9 +92,9 @@ class DataFile:
         self.names = list(self.names_gen())
         self.file_len = len(self.names)
         self.id = int(path.name[1:])
-        self.gen_indexes()
         if transpose:
             self.names = transpose.transpose(self.names)
+        self.gen_indexes()
 
     def names_gen(self):
         with self.path.open() as f:

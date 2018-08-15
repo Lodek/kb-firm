@@ -17,22 +17,21 @@ long macros[NUM_MACROS][] = MACROS_INIT;
 
 int layer = 0; //int that stores which layer is being used
 int layer_value = 0; //variable with numerical value for layer
-uint8_t r1[REPORT_LEN] = {0};
-uint8_t r2[REPORT_LEN] = {0};
+uint8_t report[REPORT_LEN] = {0};
+uint8_t old_report[REPORT_LEN] = {0};
 uint8_t h1[KEYS_LEN] = {0};
 uint8_t h2[KEYS_LEN] = {0};
-uint8_t *hash = h1, *old_hash = h2, *report = r1, *old_report = r2;
+uint8_t *hash = h1, *old_hash = h2;
 int key_index;
 uint8_t layers[LAYERS_LEN] = {LAYERS_VAL};
 Flags flags = {0};
 
 uint8_t* generate_report(){
-    //Function that should be calle from main. This function does all the heavy lifting
+    //Function that should be called from main. This function does all the heavy lifting
     //Returns a point to an 8 byte HID keyboard descriptor
     //Returns Null if the current and the past descriptors are equal
-    uint8_t *tmp = report;
-    report = old_report;
-    old_report = tmp;
+    for(int i = 0; i < REPORT_LEN; i++)
+        old_report[i] = report[i];
     update_keys(keys);
     layer_mapper();
     gen_hash();
@@ -44,6 +43,15 @@ uint8_t* generate_report(){
     if(flags.alt)
         return alt_report();
     return report;
+}
+
+VerboseReport generate_verbose_report(){
+    //Wrapper routine for generate_report, has aditionals returns
+    //an array of pointers, first element is the addres of flags
+    //second element is the layer_value
+    //3rd is pointer to report
+    VerboseReport rep = {flags.alt, layer_value, generate_report()};
+    return rep;
 }
 
 void key_handler(Key* key){
@@ -151,7 +159,7 @@ void quanta_handler(Key* key, uint32_t quanta){
     //Handles the different types of quantas (eg toggle, normal, macro),
     //adds key to report and, if successful, updates Key's state variables.
     uint8_t type, third, second, first;
-    type = quanta >> 32;
+    type = quanta >> 24;
     third = quanta >> 16;
     second = quanta >> 8;
     first = quanta;
