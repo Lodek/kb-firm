@@ -72,7 +72,6 @@ void layer_mapper();
 void gen_hash();
 int hash_diff();
 int report_diff();
-uint8_t alt_report();
 void flag_update(uint8_t value, uint8_t offset);
 
 uint8_t get_trigger(int index, int layer);

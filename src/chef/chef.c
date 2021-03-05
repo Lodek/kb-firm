@@ -54,8 +54,6 @@ uint8_t* generate_report(){
     }
     if(!report_diff())
         return 0;
-    if(flags.alt)
-        return alt_report();
     return report;
 }
 
@@ -260,18 +258,6 @@ int report_diff(){
         if(old_report[i] != report[i]) return 1;
     }
     return 0;
-}
-
-uint8_t alt_report(){
-    //copies report and transposes alt and gui values
-    //returns copied report
-    uint8_t rep[REPORT_LEN];
-    for(int i = 0; i < REPORT_LEN; i++)
-        rep[i] = report[i];
-    uint8_t alt_vals = (rep[0] & 0x44) << 1;
-    uint8_t gui_vals = (rep[0] & 0x88) >> 1;
-    rep[0] = (rep[0] & ~(0xCC)) | (alt_vals | gui_vals);
-    return &rep[0];
 }
 
 void flag_update(uint8_t value, uint8_t offset){
