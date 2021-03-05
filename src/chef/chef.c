@@ -10,9 +10,11 @@ long macros[NUM_MACROS][] = MACROS_INIT;
 
 #include "chef.h"
 #include <stdlib.h>
+#include "chef_configs.h"
 
 #define REPORT_LEN 8
 
+const int CYCLE_COUNT_TRIGGER = CHEF_CYCLES_ACTIVATION_COUNT;
 static int layer = 0; //int that stores which layer is being used
 static int layer_value = 0; //variable with numerical value for layer
 static int key_index = 0;
@@ -68,14 +70,16 @@ VerboseReport generate_verbose_report(){
 
 void key_handler(Key* key){
     //Identify which Key needs attention and calls the correct handler.
-    if(key->active && !key->handled){
+    if(key->active_cycles_count > CYCLE_COUNT_TRIGGER 
+            && !key->handled) {
         key_triggers trigger = get_trigger(key_index, layer);
         if(trigger == common) trigger_common(key);
         else if(trigger == hold) trigger_hold(key);
         else if(trigger == doubletap) trigger_dtap(key);
         else if(trigger == dth) trigger_dth(key);
     }
-    else if(!key->active && key->remove){
+    else if(!key->active_cycles_count > CYCLE_COUNT_TRIGGER && 
+            key->remove) {
         int result = report_pop(key);
         if(result) key->toggled = 0;
         else{
@@ -97,7 +101,8 @@ void trigger_hold(Key* key){
     for(uint32_t i = 0; i < hold_delay; i++){
         update_keys(keys);
         update_keys_states();
-        if(states_differs() && key->active){
+
+        if(key->active_cycles_count && states_differs()) {
             //Key still held but another key has been pressed
             quanta_handler(key, hold_quanta);
             return;
@@ -137,7 +142,7 @@ void base_triple_trigger(Key* key, uint32_t tap_quanta, uint32_t dtap_quanta, ui
         //stuff might happen else it was held for the duration of the delay
         update_keys(keys);
         update_keys_states();
-        if(states_differs() && key->active){
+        if(key->active_cycles_count && states_differs()) {
             //another key has been pressed -> hold 
             quanta_handler(key, hold_quanta);
             return;
@@ -241,7 +246,8 @@ void update_keys_states(){
     uint8_t *tmp = old_hash;
     old_hash = hash;
     hash = tmp;
-    for(int i = 0; i < keys_len; i++) hash[i] = keys[i].active;
+    for(int i = 0; i < keys_len; i++) 
+        hash[i] = keys[i].active > 0;
 }
 
 int states_differs(){

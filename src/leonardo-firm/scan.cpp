@@ -31,9 +31,9 @@ void update_keys(Key* keys){
         for(int j = 0; j < INPUTS_LEN; j++){
             int index = i * INPUTS_LEN + j;
             if(digitalRead(inputs[j]) == OUTPUT_ON)
-                keys[index].active = 1;
+                keys[index].cycles_active++;
             else
-                keys[index].active = 0;
+                keys[index].cycles_active = 0;
         }
         digitalWrite(outputs[i], OUTPUT_OFF);
     }
