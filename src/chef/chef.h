@@ -4,9 +4,11 @@
 #include <stdint.h>
 
 //Defines the meaning for quanta's 4th byte
+// FIXME refactor enum variantes to uppercase
 typedef enum {normal, toggle, macro, dead, absolute, flag, signal} quanta_type;
 
 //Possible triggers for a physical key switch.
+// FIXME refactor enum variantes to uppercase
 typedef enum {common, hold, doubletap, dth} key_triggers;
 
 
