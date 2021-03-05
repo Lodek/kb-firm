@@ -48,7 +48,7 @@ uint8_t* generate_report(){
         old_report[i] = report[i];
     update_keys(keys);
     layer_mapper();
-    gen_hash();
+    update_keys_states();
     for(key_index = 0; key_index < keys_len; key_index++){
         key_handler(&keys[key_index]);
     }
@@ -96,7 +96,7 @@ void trigger_hold(Key* key){
     uint32_t tap_quanta = get_quanta(key_index, layer, 0);
     for(uint32_t i = 0; i < hold_delay; i++){
         update_keys(keys);
-        gen_hash();
+        update_keys_states();
         if(hash_diff() && key->active){
             //Key still held but another key has been pressed
             quanta_handler(key, hold_quanta);
@@ -136,7 +136,7 @@ void base_triple_trigger(Key* key, uint32_t tap_quanta, uint32_t dtap_quanta, ui
         //loop waiting for a release. if key released in time
         //stuff might happen else it was held for the duration of the delay
         update_keys(keys);
-        gen_hash();
+        update_keys_states();
         if(hash_diff() && key->active){
             //another key has been pressed -> hold 
             quanta_handler(key, hold_quanta);
@@ -152,7 +152,7 @@ void base_triple_trigger(Key* key, uint32_t tap_quanta, uint32_t dtap_quanta, ui
     }
     for(int j = 0; j < retap_delay; j++){
         update_keys(keys);
-        gen_hash();
+        update_keys_states();
         if(hash_diff() && !key->active){
             //key still released and a different key has been pressed
             quanta_handler(key, tap_quanta);
@@ -236,7 +236,7 @@ void layer_mapper(){
             layer = i;
 }
 
-void gen_hash(){
+void update_keys_states(){
     //updates the hash array for the current state of keys
     uint8_t *tmp = old_hash;
     old_hash = hash;
