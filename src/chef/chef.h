@@ -17,6 +17,10 @@ typedef struct {
     //remove -> marked for removal
     //toggled -> aux bit to handle toggles
     uint8_t active, handled, remove, toggled;
+
+    //counts the number of cycles the key has been active for
+    uint8_t active_cycles_count;
+
     uint8_t written_mod, written_layer, report_index;
     uint8_t index, trigger;
     //Conceptually, Key should have a Name for each layer.
