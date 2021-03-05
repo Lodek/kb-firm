@@ -97,7 +97,7 @@ void trigger_hold(Key* key){
     for(uint32_t i = 0; i < hold_delay; i++){
         update_keys(keys);
         update_keys_states();
-        if(hash_diff() && key->active){
+        if(states_differs() && key->active){
             //Key still held but another key has been pressed
             quanta_handler(key, hold_quanta);
             return;
@@ -137,7 +137,7 @@ void base_triple_trigger(Key* key, uint32_t tap_quanta, uint32_t dtap_quanta, ui
         //stuff might happen else it was held for the duration of the delay
         update_keys(keys);
         update_keys_states();
-        if(hash_diff() && key->active){
+        if(states_differs() && key->active){
             //another key has been pressed -> hold 
             quanta_handler(key, hold_quanta);
             return;
@@ -153,7 +153,7 @@ void base_triple_trigger(Key* key, uint32_t tap_quanta, uint32_t dtap_quanta, ui
     for(int j = 0; j < retap_delay; j++){
         update_keys(keys);
         update_keys_states();
-        if(hash_diff() && !key->active){
+        if(states_differs() && !key->active){
             //key still released and a different key has been pressed
             quanta_handler(key, tap_quanta);
             return;
@@ -244,7 +244,7 @@ void update_keys_states(){
     for(int i = 0; i < keys_len; i++) hash[i] = keys[i].active;
 }
 
-int hash_diff(){
+int states_differs(){
     //returns true if hashes are different else false
     for(int i = 0; i < keys_len; i++){
         if(old_hash[i] != hash[i]) return 1;

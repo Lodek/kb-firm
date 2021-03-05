@@ -72,7 +72,7 @@ int report_append(Key* key, uint8_t layer, uint8_t mod, uint8_t keycode);
 int report_pop(Key* key);
 void layer_mapper();
 void update_keys_states();
-int hash_diff();
+int states_differs();
 int report_diff();
 void flag_update(uint8_t value, uint8_t offset);
 
