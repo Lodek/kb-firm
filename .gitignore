@@ -3,3 +3,5 @@ CAD/Plate.*
 .desktop
 dev/a.out
 *__pycache__
+*.a
+*.o
